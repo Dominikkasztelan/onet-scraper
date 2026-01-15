@@ -1,4 +1,8 @@
 
+import warnings
+# Suppress the 32-bit cryptography warning on Windows
+warnings.filterwarnings("ignore", category=UserWarning, module='OpenSSL')
+
 import pytest
 import os
 import sys
