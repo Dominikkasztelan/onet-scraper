@@ -46,8 +46,38 @@ class OnetSpider(CrawlSpider):
         return None
 
     def parse_item(self, response):
-        json_ld_date = response.xpath('//meta[@property="article:published_time"]/@content').get()
-        visible_date = response.css('.dateMeta::text').get()
+        self.logger.info(f"Parsing Item: {response.url}")
+        
+        # Strategy 1: JSON-LD
+        json_ld_date = None
+        ld_json_scripts = response.xpath('//script[@type="application/ld+json"]/text()').getall()
+        import json
+        for script in ld_json_scripts:
+            try:
+                data = json.loads(script)
+                # Handle @graph structure
+                if '@graph' in data:
+                    for node in data['@graph']:
+                        if 'datePublished' in node:
+                            json_ld_date = node['datePublished']
+                            break
+                # Handle direct structure
+                elif 'datePublished' in data:
+                    json_ld_date = data['datePublished']
+                
+                if json_ld_date:
+                    break
+            except:
+                continue
+
+        # Strategy 2: Visible date (updated class)
+        visible_date = response.css('.ods-m-date-authorship__publication::text').get()
+        if not visible_date:
+            # Try a broader selector just in case
+            visible_date = response.xpath('//span[contains(@class, "date")]/text()').get()
+        
+        self.logger.info(f"DEBUG DATE FOUND - JSON-LD: {json_ld_date} | Visible: {visible_date}")
+        
         date_to_check = json_ld_date if json_ld_date else visible_date
 
         if date_to_check:

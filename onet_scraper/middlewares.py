@@ -105,6 +105,7 @@ class UrllibDownloaderMiddleware:
     def process_request(self, request, spider):
         # Only use urllib for Onet domain to bypass protection
         if 'onet.pl' in request.url:
+            spider.logger.info(f"UrllibMiddleware: Intercepting {request.url}")
             try:
                 # Use standard headers that worked in testing
                 headers = {
@@ -116,6 +117,7 @@ class UrllibDownloaderMiddleware:
                     body = response.read()
                     url = response.geturl()
                     status = response.status
+                    spider.logger.info(f"UrllibMiddleware: Success {status} for {url}")
                     
                     return HtmlResponse(url=url, status=status, body=body, encoding='utf-8', request=request)
             except Exception as e:
