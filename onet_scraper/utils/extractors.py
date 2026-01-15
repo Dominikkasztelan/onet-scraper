@@ -2,13 +2,16 @@
 import json
 from datetime import datetime
 
-def extract_json_ld(response) -> dict:
+from scrapy.http import Response
+from typing import Optional, Dict, Any
+
+def extract_json_ld(response: Response) -> Dict[str, Optional[str]]:
     """
     Extracts relevant metadata (date, author, section) from JSON-LD scripts.
     Returns a dictionary with found keys.
     """
     ld_json_scripts = response.xpath('//script[@type="application/ld+json"]/text()').getall()
-    metadata = {
+    metadata: Dict[str, Optional[str]] = {
         'datePublished': None,
         'dateModified': None,
         'author': None,
@@ -22,9 +25,9 @@ def extract_json_ld(response) -> dict:
         try:
             data = json.loads(script)
             
-            def process_node(node):
+            def process_node(node: Dict[str, Any]) -> None:
                 nonlocal found
-                updates = {}
+                updates: Dict[str, Optional[str]] = {}
                 if 'datePublished' in node:
                     updates['datePublished'] = node['datePublished']
                     found = True
@@ -56,7 +59,7 @@ def extract_json_ld(response) -> dict:
             
             if found:
                 break
-        except:
+        except (json.JSONDecodeError, ValueError, TypeError):
             continue
             
     return metadata

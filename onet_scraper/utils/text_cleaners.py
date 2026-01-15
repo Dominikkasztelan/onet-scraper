@@ -1,8 +1,9 @@
 import json
-import os
 from pathlib import Path
 
-def load_cleaning_rules():
+from typing import Dict, List
+
+def load_cleaning_rules() -> Dict[str, List[str]]:
     """
     Loads cleaning rules from resources/cleaning_rules.json
     """
@@ -13,7 +14,7 @@ def load_cleaning_rules():
         
         with open(config_path, 'r', encoding='utf-8') as f:
             return json.load(f)
-    except Exception as e:
+    except (OSError, json.JSONDecodeError) as e:
         print(f"⚠️ Failed to load cleaning rules: {e}")
         return {"scam_phrases": [], "cutoff_markers": []}
 

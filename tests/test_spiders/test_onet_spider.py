@@ -1,6 +1,4 @@
 
-import sys
-import os
 import pytest
 from scrapy.http import HtmlResponse, Request
 from onet_scraper.spiders.onet import OnetSpider

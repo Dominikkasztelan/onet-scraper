@@ -1,7 +1,7 @@
-import scrapy
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
-from datetime import datetime
+from scrapy.http import Response
+from typing import Any, Generator, Dict
 from onet_scraper.items import ArticleItem
 
 # SRP Utils
@@ -38,10 +38,10 @@ class OnetSpider(CrawlSpider):
         Rule(LinkExtractor(allow=(r'wiadomosci.onet.pl'), restrict_xpaths='//a[contains(@class, "next")]'), follow=True),
     )
 
-    def skip_request(self, request, response):
+    def skip_request(self, request: Any, response: Response) -> None:
         return None
 
-    def parse_item(self, response):
+    def parse_item(self, response: Response) -> Generator[Dict[str, Any], None, None]:
         # 1. Extract Metadata using Utils
         metadata = extract_json_ld(response)
         

@@ -3,7 +3,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from scrapy.http import Request, HtmlResponse
 from onet_scraper.middlewares import UrllibDownloaderMiddleware
-import urllib.request as urllib_request
+import urllib.error
 
 @pytest.fixture
 def middleware():
@@ -54,7 +54,7 @@ def test_process_request_handles_exception(middleware, spider):
     
     with patch('urllib.request.urlopen') as mock_urlopen:
         # Make urlopen raise an arbitrary exception
-        mock_urlopen.side_effect = Exception("Connection Refused")
+        mock_urlopen.side_effect = urllib.error.URLError(reason="Connection Refused")
         
         result = middleware.process_request(request, spider)
         
