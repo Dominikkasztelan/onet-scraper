@@ -46,7 +46,6 @@ class OnetSpider(CrawlSpider):
         return None
 
     def parse_item(self, response):
-        self.logger.info(f"Parsing Item: {response.url}")
         
         # Strategy 1: JSON-LD
         json_ld_date = None
@@ -76,7 +75,6 @@ class OnetSpider(CrawlSpider):
             # Try a broader selector just in case
             visible_date = response.xpath('//span[contains(@class, "date")]/text()').get()
         
-        self.logger.info(f"DEBUG DATE FOUND - JSON-LD: {json_ld_date} | Visible: {visible_date}")
         
         date_to_check = json_ld_date if json_ld_date else visible_date
 
