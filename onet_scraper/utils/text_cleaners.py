@@ -1,3 +1,24 @@
+import json
+import os
+from pathlib import Path
+
+def load_cleaning_rules():
+    """
+    Loads cleaning rules from resources/cleaning_rules.json
+    """
+    try:
+        current_dir = Path(__file__).parent
+        # Go up one level to onet_scraper, then to resources
+        config_path = current_dir.parent / 'resources' / 'cleaning_rules.json'
+        
+        with open(config_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"⚠️ Failed to load cleaning rules: {e}")
+        return {"scam_phrases": [], "cutoff_markers": []}
+
+# Load rules once on module import
+RULES = load_cleaning_rules()
 
 def clean_article_content(content_list: list[str]) -> str:
     """
@@ -11,25 +32,11 @@ def clean_article_content(content_list: list[str]) -> str:
     # Normalize text
     clean_content = full_content.replace('\xa0', ' ')
     
-    # Filter out known boilerplates
-    scam_phrases = [
-        "Dołącz do Premium",
-        "i odblokuj wszystkie funkcje", 
-        "dla materiałów Premium",
-        "Onet Premium",
-        "Kliknij tutaj",
-        "Zobacz także",
-        "redakcja", # Often at the end
-        "Źródło:"
-    ]
+    # Filter out known boilerplates from Config
+    scam_phrases = RULES.get("scam_phrases", [])
     
     # Cutoff markers - stop reading if we hit these
-    cutoff_markers = [
-        "Dołącz do Premium",
-        "i odblokuj wszystkie funkcje",
-        "Zobacz także",
-        "Onet Premium"
-    ]
+    cutoff_markers = RULES.get("cutoff_markers", [])
     
     for marker in cutoff_markers:
         if marker in clean_content:
