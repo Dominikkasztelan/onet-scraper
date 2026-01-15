@@ -35,8 +35,8 @@ def test_process_request_intercepts_onet(middleware, spider):
         assert isinstance(result, HtmlResponse)
         assert result.body == b"<html>Test Content</html>"
         assert result.status == 200
-        # Check logs
-        spider.logger.info.assert_any_call("UrllibMiddleware: Intercepting https://wiadomosci.onet.pl/artykul")
+        # Check logs (Debug level now)
+        spider.logger.debug.assert_any_call("UrllibMiddleware: Intercepting https://wiadomosci.onet.pl/artykul")
 
 def test_process_request_ignores_other_domains(middleware, spider):
     request = Request(url="https://google.com")
