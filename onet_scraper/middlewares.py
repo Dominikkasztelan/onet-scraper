@@ -98,3 +98,27 @@ class OnetScraperDownloaderMiddleware:
 
     def spider_opened(self, spider):
         spider.logger.info("Spider opened: %s" % spider.name)
+import urllib.request
+from scrapy.http import HtmlResponse
+
+class UrllibDownloaderMiddleware:
+    def process_request(self, request, spider):
+        # Only use urllib for Onet domain to bypass protection
+        if 'onet.pl' in request.url:
+            try:
+                # Use standard headers that worked in testing
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                }
+                req = urllib.request.Request(request.url, headers=headers)
+                
+                with urllib.request.urlopen(req) as response:
+                    body = response.read()
+                    url = response.geturl()
+                    status = response.status
+                    
+                    return HtmlResponse(url=url, status=status, body=body, encoding='utf-8', request=request)
+            except Exception as e:
+                spider.logger.error(f"UrllibMiddleware Error: {e}")
+                return None # Let Scrapy try if urllib fails
+        return None
