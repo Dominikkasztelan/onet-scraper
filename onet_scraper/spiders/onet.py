@@ -2,7 +2,6 @@ import scrapy
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 from datetime import datetime
-# Importujemy nasz model z pliku items.py
 from onet_scraper.items import ArticleItem
 
 class OnetSpider(CrawlSpider):
@@ -18,8 +17,8 @@ class OnetSpider(CrawlSpider):
     $ python debug_runner.py
     """
     name = 'onet'
-    allowed_domains = ['wiadomosci.onet.pl']
-    start_urls = ['https://wiadomosci.onet.pl/', 'https://wiadomosci.onet.pl/kraj', 'https://wiadomosci.onet.pl/swiat']
+    allowed_domains = ["onet.pl"]
+    start_urls = ["https://wiadomosci.onet.pl/"]
 
     custom_settings = {
         'USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

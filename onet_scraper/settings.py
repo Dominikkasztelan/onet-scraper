@@ -1,11 +1,5 @@
 # Scrapy settings for onet_scraper project
-#
-# For simplicity, this file contains only settings considered important or
-# commonly used. You can find more settings consulting the documentation:
-#
-#     https://docs.scrapy.org/en/latest/topics/settings.html
-#     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-#     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
+import os
 
 BOT_NAME = "onet_scraper"
 
@@ -14,20 +8,24 @@ NEWSPIDER_MODULE = "onet_scraper.spiders"
 
 ADDONS = {}
 
-
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-#USER_AGENT = "onet_scraper (+http://www.yourdomain.com)"
+# Using a standard browser UA to blend in (Works on Windows/Linux)
+USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
 
 # Concurrency and throttling settings
-#CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_DOMAIN = 1
-DOWNLOAD_DELAY = 1
+DOWNLOAD_DELAY = 2 # Slower but safer for 24/7 server operation
 
 # Disable cookies (enabled by default)
-#COOKIES_ENABLED = False
+COOKIES_ENABLED = False
+
+# Logging Configuration (Cross-platform compatible)
+# Log to a file named 'scraper.log' in the project root
+LOG_FILE = os.path.join(os.getcwd(), 'scraper.log')
+LOG_LEVEL = 'INFO'
 
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED = False
