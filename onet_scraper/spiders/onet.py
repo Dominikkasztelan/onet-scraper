@@ -128,12 +128,15 @@ class OnetSpider(CrawlSpider):
                     try:
                         # Extract content
                         content_list = response.css('.hyphenate::text').getall()
-                        if not content_list:
-                            # Fallback to all P tags if .hyphenate missing, filtering short/empty
-                            ps = response.css('p::text').getall()
-                            content_list = [t for t in ps if len(t.strip()) > 30]
+                        # Clean initially to check if we really found text
+                        content_list = [c.strip() for c in content_list if c.strip()]
                         
-                        full_content = "\n".join([c.strip() for c in content_list if c.strip()])
+                        if not content_list:
+                            # Fallback to all P tags if .hyphenate missing or empty, filtering short/empty
+                            ps = response.css('p::text').getall()
+                            content_list = [t.strip() for t in ps if len(t.strip()) > 30]
+                        
+                        full_content = "\n".join(content_list)
                         
                         # --- Extra Fields Logic ---
                         # Keywords
