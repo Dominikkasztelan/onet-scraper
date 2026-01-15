@@ -50,24 +50,62 @@ class OnetSpider(CrawlSpider):
         # Strategy 1: JSON-LD
         json_ld_date = None
         ld_json_scripts = response.xpath('//script[@type="application/ld+json"]/text()').getall()
+        # Init variables for new fields
+        author = None
+        section = None
+        date_modified = None
+        image_url = None
+        
         import json
         for script in ld_json_scripts:
             try:
                 data = json.loads(script)
+                
+                # Helper to process a JSON-LD node
+                def process_node(node):
+                    nonlocal json_ld_date, author, section, date_modified, image_url
+                    if 'datePublished' in node:
+                        json_ld_date = node['datePublished']
+                    if 'dateModified' in node:
+                        date_modified = node['dateModified']
+                    if 'author' in node:
+                        if isinstance(node['author'], dict) and 'name' in node['author']:
+                            author = node['author']['name']
+                        elif isinstance(node['author'], list) and len(node['author']) > 0 and 'name' in node['author'][0]:
+                            author = node['author'][0]['name']
+                    if 'articleSection' in node:
+                        section = node['articleSection']
+                    if 'image' in node:
+                        if isinstance(node['image'], dict) and 'url' in node['image']:
+                            image_url = node['image']['url']
+                        elif isinstance(node['image'], str):
+                            image_url = node['image']
+
                 # Handle @graph structure
                 if '@graph' in data:
                     for node in data['@graph']:
-                        if 'datePublished' in node:
-                            json_ld_date = node['datePublished']
-                            break
+                        process_node(node)
                 # Handle direct structure
-                elif 'datePublished' in data:
-                    json_ld_date = data['datePublished']
+                else:
+                    process_node(data)
                 
                 if json_ld_date:
                     break
             except:
                 continue
+
+        # Fallback for Author if JSON-LD failed
+        if not author:
+             # Based on user feedback/image
+             author = response.css('.ods-m-author-xl__name-link::text').get()
+             if not author:
+                 author = response.css('.ods-m-author-xl__name::text').get() # Without link
+             if not author:
+                 author = response.css('.authorName::text').get() # Old potential class
+             
+             if author:
+                 author = author.strip()
+
 
         # Strategy 2: Visible date (updated class)
         visible_date = response.css('.ods-m-date-authorship__publication::text').get()
@@ -88,12 +126,80 @@ class OnetSpider(CrawlSpider):
                 # FILTER: Allow articles from the last 3 days
                 if 0 <= days_diff <= 3:
                     try:
+                        # Extract content
+                        content_list = response.css('.hyphenate::text').getall()
+                        if not content_list:
+                            # Fallback to all P tags if .hyphenate missing, filtering short/empty
+                            ps = response.css('p::text').getall()
+                            content_list = [t for t in ps if len(t.strip()) > 30]
+                        
+                        full_content = "\n".join([c.strip() for c in content_list if c.strip()])
+                        
+                        # --- Extra Fields Logic ---
+                        # Keywords
+                        keywords = response.xpath('//meta[@name="keywords"]/@content').get()
+                        
+                        # ID (Internal)
+                        # Try data-story-id
+                        internal_id = response.xpath('//meta[@name="data-story-id"]/@content').get()
+                        if not internal_id:
+                            # Fallback: extract from URL
+                            import re
+                            id_match = re.search(r'/([a-z0-9]+)$', response.url)
+                            if id_match:
+                                internal_id = id_match.group(1)
+                                
+                        # Read Time (Estimate if not present)
+                        # 200 words per minute
+                        word_count = len(full_content.split())
+                        read_time = max(1, round(word_count / 200))
+
+                        if not image_url:
+                            image_url = response.xpath('//meta[@property="og:image"]/@content').get()
+
+                        # --- Content Cleaning ---
+                        # Filter out known boilerplates
+                        clean_content = full_content
+                        scam_phrases = [
+                            "Dołącz do Premium",
+                            "i odblokuj wszystkie funkcje", 
+                            "dla materiałów Premium",
+                            "Onet Premium",
+                            "Kliknij tutaj",
+                            "Zobacz także"
+                        ]
+                        
+                        # Only keep text BEFORE the premium cutoff if found
+                        premium_marker = "Dołącz do Premium"
+                        if premium_marker in clean_content:
+                            clean_content = clean_content.split(premium_marker)[0]
+                        
+                        # Remove other junk lines
+                        lines = clean_content.split('\n')
+                        filtered_lines = []
+                        for line in lines:
+                            if any(phrase in line for phrase in scam_phrases):
+                                continue
+                            if len(line.strip()) < 5: # Remove very short artifact lines
+                                continue
+                            filtered_lines.append(line)
+                        
+                        clean_content = "\n".join(filtered_lines).strip()
+
                         # Tworzymy i walidujemy item
                         item = ArticleItem(
                             title=response.css('h1::text').get(),
                             url=response.url,
                             date=article_date_str,
-                            lead=response.css('#lead::text').get()
+                            lead=response.css('#lead::text').get(),
+                            content=clean_content, # Use cleaned content
+                            author=author,
+                            keywords=keywords,
+                            section=section,
+                            date_modified=date_modified,
+                            image_url=image_url,
+                            id=internal_id,
+                            read_time=read_time
                         )
                         self.logger.info(f"✅ ZAPISANO: {article_date_str} | {response.url}")
                         yield item.model_dump()
