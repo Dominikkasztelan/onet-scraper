@@ -5,3 +5,4 @@ pytest==9.0.2
 pytest-mock==3.12.0
 curl_cffi>=0.6.0
 pytest-asyncio
+stem>=1.8.2

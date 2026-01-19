@@ -45,8 +45,13 @@ LOG_LEVEL = 'INFO'
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-   'onet_scraper.middlewares.AsyncCurlMiddleware': 543,
+   'onet_scraper.middlewares.TorMiddleware': 543,
 }
+
+# Tor Settings
+TOR_PROXY = 'socks5://127.0.0.1:9050'
+TOR_CONTROL_PORT = 9051
+TOR_PASSWORD = None
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
