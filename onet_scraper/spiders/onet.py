@@ -22,7 +22,8 @@ class OnetSpider(CrawlSpider):
     start_urls = ["https://wiadomosci.onet.pl/"]
 
     custom_settings = {
-        "USER_AGENT": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "USER_AGENT": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "DOWNLOAD_DELAY": 2.0,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 1,
         "DEPTH_LIMIT": 3,
