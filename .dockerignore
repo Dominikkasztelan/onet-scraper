@@ -1,0 +1,23 @@
+
+# Version Control
+.git
+.gitignore
+
+# Python Artifacts
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual Environment
+venv/
+env/
+.env
+
+# Logs and Data
+*.log
+data_*.jsonl
+data_production.jsonl
+
+# Testing
+.pytest_cache/
+tests/

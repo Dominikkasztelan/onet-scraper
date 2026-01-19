@@ -1,4 +1,5 @@
 scrapy==2.14.1
 pydantic==2.12.5
 itemadapter==0.13.1
-pytest==8.3.4
+pytest==9.0.2
+pytest-mock==3.12.0

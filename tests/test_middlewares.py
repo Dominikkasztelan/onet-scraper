@@ -1,5 +1,6 @@
 
 import pytest
+import asyncio
 from unittest.mock import MagicMock, patch
 from scrapy.http import Request, HtmlResponse
 from onet_scraper.middlewares import UrllibDownloaderMiddleware
@@ -27,7 +28,8 @@ def test_process_request_intercepts_onet(middleware, spider):
         mock_response.status = 200
         mock_urlopen.return_value.__enter__.return_value = mock_response
         
-        result = middleware.process_request(request, spider)
+        # Run async method
+        result = asyncio.run(middleware.process_request(request, spider))
         
         # Verify it was called
         mock_urlopen.assert_called_once()
@@ -42,7 +44,7 @@ def test_process_request_ignores_other_domains(middleware, spider):
     request = Request(url="https://google.com")
     
     with patch('urllib.request.urlopen') as mock_urlopen:
-        result = middleware.process_request(request, spider)
+        result = asyncio.run(middleware.process_request(request, spider))
         
         # Should NOT call urllib
         mock_urlopen.assert_not_called()
@@ -56,7 +58,7 @@ def test_process_request_handles_exception(middleware, spider):
         # Make urlopen raise an arbitrary exception
         mock_urlopen.side_effect = urllib.error.URLError(reason="Connection Refused")
         
-        result = middleware.process_request(request, spider)
+        result = asyncio.run(middleware.process_request(request, spider))
         
         # Should log error
         spider.logger.error.assert_called()

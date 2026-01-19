@@ -1,59 +1,76 @@
 
 import pytest
+from datetime import datetime
 from scrapy.http import HtmlResponse, Request
 from onet_scraper.spiders.onet import OnetSpider
-
-# Mock HTML content
-MOCK_HTML_WITH_JSON_LD = """
-<html>
-    <head>
-        <script type="application/ld+json">
-        {
-            "@graph": [
-                {
-                    "@context": "https://schema.org",
-                    "@type": "NewsArticle",
-                    "datePublished": "2026-01-15T12:00:00+01:00",
-                    "dateModified": "2026-01-15T13:00:00+01:00",
-                    "author": {
-                        "@type": "Person",
-                        "name": "Test Author"
-                    },
-                    "headline": "Test Title",
-                    "articleSection": "Test Section",
-                    "image": {
-                        "url": "http://example.com/image.jpg"
-                    }
-                }
-            ]
-        }
-        </script>
-        <meta name="keywords" content="test, news, scraper">
-        <meta name="data-story-id" content="test1234">
-    </head>
-    <body class="hyphenate">
-        <h1>Test Title</h1>
-        <div id="lead">Test Lead</div>
-        <p>This is the first paragraph of content which is definitely longer than thirty characters to pass the filter.</p>
-        <p>This is the second paragraph which contains the phrase Dołącz do Premium text and should be cut off.</p>
-        <p class="ods-m-author-xl__name-link">Fallback Author</p>
-    </body>
-</html>
-"""
 
 @pytest.fixture
 def spider():
     return OnetSpider()
 
+def create_mock_response(url, title, date, content, json_ld_valid=True):
+    date = date or datetime.now().strftime('%Y-%m-%d')
+    
+    if json_ld_valid:
+        json_section = f"""
+            <script type="application/ld+json">
+            {{
+                "@graph": [
+                    {{
+                        "@context": "https://schema.org",
+                        "@type": "NewsArticle",
+                        "datePublished": "{date}T12:00:00+01:00",
+                        "dateModified": "{date}T13:00:00+01:00",
+                        "author": {{ "@type": "Person", "name": "Test Author" }},
+                        "headline": "{title}",
+                        "articleSection": "Test Section",
+                        "image": {{ "url": "http://example.com/image.jpg" }}
+                    }}
+                ]
+            }}
+            </script>
+        """
+    else:
+        # Invalid or missing JSON-LD
+        if json_ld_valid is False:
+             # Just invalid json
+             json_section = '<script type="application/ld+json">{ broken json ... </script>'
+        else:
+             json_section = ""
+
+    html = f"""
+    <html>
+        <head>
+            {json_section}
+            <meta name="keywords" content="test, news, scraper">
+            <meta name="data-story-id" content="test1234">
+        </head>
+        <body class="hyphenate">
+            <h1>{title}</h1>
+            <div id="lead">Test Lead</div>
+            <span class="ods-m-date-authorship__publication">{date} 10:00</span>
+            <span class="ods-m-author-xl__name-link">Fallback Author</span>
+            {content}
+        </body>
+    </html>
+    """
+    request = Request(url=url)
+    return HtmlResponse(url=url, request=request, body=html.encode('utf-8'))
+
+
 def test_parse_item_json_ld(spider):
-    request = Request(url="https://wiadomosci.onet.pl/test-article")
-    response = HtmlResponse(
+    content = """
+    <p>This is the first paragraph of content which is definitely longer than thirty characters to pass the filter.</p>
+    <p>This is the second paragraph which contains the phrase Dołącz do Premium text and should be cut off.</p>
+    """
+    response = create_mock_response(
         url="https://wiadomosci.onet.pl/test-article",
-        request=request,
-        body=MOCK_HTML_WITH_JSON_LD.encode('utf-8')
+        title="Test Title",
+        date=None, # use today
+        content=content,
+        json_ld_valid=True
     )
     
-    # Run the generator and get the first result
     results = list(spider.parse_item(response))
     assert len(results) == 1
     item = results[0]
@@ -62,28 +79,18 @@ def test_parse_item_json_ld(spider):
     assert item['author'] == "Test Author"
     assert item['section'] == "Test Section"
     assert "This is the first paragraph" in item['content']
-    assert "Dołącz do Premium" not in item['content'] # Should be cleaned
+    assert "Dołącz do Premium" not in item['content']
     assert item['id'] == "test1234"
     assert item['keywords'] == "test, news, scraper"
 
 def test_parse_item_fallback(spider):
-    # HTML WITHOUT JSON-LD
-    html = """
-    <html>
-        <body>
-            <h1>Fallback Title</h1>
-            <div id="lead">Fallback Lead</div>
-            <span class="ods-m-date-authorship__publication">2026-01-14 10:00</span>
-            <span class="ods-m-author-xl__name-link">Fallback Author</span>
-            <p class="hyphenate">Some content here.</p>
-        </body>
-    </html>
-    """
-    request = Request(url="https://wiadomosci.onet.pl/fallback-article")
-    response = HtmlResponse(
+    content = '<p class="hyphenate">Some content here.</p>'
+    response = create_mock_response(
         url="https://wiadomosci.onet.pl/fallback-article",
-        request=request,
-        body=html.encode('utf-8')
+        title="Fallback Title",
+        date=None,
+        content=content,
+        json_ld_valid=None # No JSON LD
     )
     
     results = list(spider.parse_item(response))
@@ -92,64 +99,30 @@ def test_parse_item_fallback(spider):
     
     assert item['title'] == "Fallback Title"
     assert item['author'] == "Fallback Author"
-    assert item['date'] == "2026-01-14"
+    # Helper defaults date to today if None is passed
+    assert item['date'] == datetime.now().strftime('%Y-%m-%d')
 
 def test_parse_item_filters_old_articles(spider):
-    # Article from 2020 (way older than 3 days)
-    html = """
-    <html>
-        <head>
-            <script type="application/ld+json">
-            {
-                "@context": "https://schema.org",
-                "@type": "NewsArticle",
-                "datePublished": "2020-01-01T12:00:00+01:00", 
-                "headline": "Old News"
-            }
-            </script>
-        </head>
-        <body class="hyphenate">
-            <h1>Old Title</h1>
-        </body>
-    </html>
-    """
-    request = Request(url="https://wiadomosci.onet.pl/old-article")
-    response = HtmlResponse(
+    response = create_mock_response(
         url="https://wiadomosci.onet.pl/old-article",
-        request=request,
-        body=html.encode('utf-8')
+        title="Old Title",
+        date="2020-01-01",
+        content="<p>Old content</p>"
     )
     
-    # Should yield nothing because it's filtered
     results = list(spider.parse_item(response))
     assert len(results) == 0
 
 def test_parse_item_malformed_json_ld(spider):
-    # JSON-LD is broken/invalid JSON
-    html = """
-    <html>
-        <head>
-            <script type="application/ld+json">
-            { broken json here ... 
-            </script>
-        </head>
-        <body>
-            <h1>Title</h1>
-            <div id="lead">Lead</div>
-            <span class="ods-m-date-authorship__publication">2026-01-15 10:00</span>
-            <p class="hyphenate">Content must be present.</p>
-        </body>
-    </html>
-    """
-    request = Request(url="https://wiadomosci.onet.pl/malformed")
-    response = HtmlResponse(
+    content = '<p class="hyphenate">Content must be present.</p>'
+    response = create_mock_response(
         url="https://wiadomosci.onet.pl/malformed",
-        request=request,
-        body=html.encode('utf-8')
+        title="Title",
+        date=None,
+        content=content,
+        json_ld_valid=False # Broken JSON
     )
     
-    # Should handle error gracefully and try fallback/cleanup logic
-    # In this mock, we have valid fallback date in span, so it SHOULD succeed
     results = list(spider.parse_item(response))
     assert len(results) == 1
     assert results[0]['title'] == "Title"
