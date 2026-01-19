@@ -1,16 +1,19 @@
+from datetime import datetime
 
 import pytest
-from datetime import datetime
 from scrapy.http import HtmlResponse, Request
+
 from onet_scraper.spiders.onet import OnetSpider
+
 
 @pytest.fixture
 def spider():
     return OnetSpider()
 
+
 def create_mock_response(url, title, date, content, json_ld_valid=True):
-    date = date or datetime.now().strftime('%Y-%m-%d')
-    
+    date = date or datetime.now().strftime("%Y-%m-%d")
+
     if json_ld_valid:
         json_section = f"""
             <script type="application/ld+json">
@@ -33,10 +36,10 @@ def create_mock_response(url, title, date, content, json_ld_valid=True):
     else:
         # Invalid or missing JSON-LD
         if json_ld_valid is False:
-             # Just invalid json
-             json_section = '<script type="application/ld+json">{ broken json ... </script>'
+            # Just invalid json
+            json_section = '<script type="application/ld+json">{ broken json ... </script>'
         else:
-             json_section = ""
+            json_section = ""
 
     html = f"""
     <html>
@@ -55,7 +58,7 @@ def create_mock_response(url, title, date, content, json_ld_valid=True):
     </html>
     """
     request = Request(url=url)
-    return HtmlResponse(url=url, request=request, body=html.encode('utf-8'))
+    return HtmlResponse(url=url, request=request, body=html.encode("utf-8"))
 
 
 def test_parse_item_json_ld(spider):
@@ -66,22 +69,23 @@ def test_parse_item_json_ld(spider):
     response = create_mock_response(
         url="https://wiadomosci.onet.pl/test-article",
         title="Test Title",
-        date=None, # use today
+        date=None,  # use today
         content=content,
-        json_ld_valid=True
+        json_ld_valid=True,
     )
-    
+
     results = list(spider.parse_item(response))
     assert len(results) == 1
     item = results[0]
-    
-    assert item['title'] == "Test Title"
-    assert item['author'] == "Test Author"
-    assert item['section'] == "Test Section"
-    assert "This is the first paragraph" in item['content']
-    assert "Dołącz do Premium" not in item['content']
-    assert item['id'] == "test1234"
-    assert item['keywords'] == "test, news, scraper"
+
+    assert item["title"] == "Test Title"
+    assert item["author"] == "Test Author"
+    assert item["section"] == "Test Section"
+    assert "This is the first paragraph" in item["content"]
+    assert "Dołącz do Premium" not in item["content"]
+    assert item["id"] == "test1234"
+    assert item["keywords"] == "test, news, scraper"
+
 
 def test_parse_item_fallback(spider):
     content = '<p class="hyphenate">Some content here.</p>'
@@ -90,28 +94,27 @@ def test_parse_item_fallback(spider):
         title="Fallback Title",
         date=None,
         content=content,
-        json_ld_valid=None # No JSON LD
+        json_ld_valid=None,  # No JSON LD
     )
-    
+
     results = list(spider.parse_item(response))
     assert len(results) == 1
     item = results[0]
-    
-    assert item['title'] == "Fallback Title"
-    assert item['author'] == "Fallback Author"
+
+    assert item["title"] == "Fallback Title"
+    assert item["author"] == "Fallback Author"
     # Helper defaults date to today if None is passed
-    assert item['date'] == datetime.now().strftime('%Y-%m-%d')
+    assert item["date"] == datetime.now().strftime("%Y-%m-%d")
+
 
 def test_parse_item_filters_old_articles(spider):
     response = create_mock_response(
-        url="https://wiadomosci.onet.pl/old-article",
-        title="Old Title",
-        date="2020-01-01",
-        content="<p>Old content</p>"
+        url="https://wiadomosci.onet.pl/old-article", title="Old Title", date="2020-01-01", content="<p>Old content</p>"
     )
-    
+
     results = list(spider.parse_item(response))
     assert len(results) == 0
+
 
 def test_parse_item_malformed_json_ld(spider):
     content = '<p class="hyphenate">Content must be present.</p>'
@@ -120,16 +123,17 @@ def test_parse_item_malformed_json_ld(spider):
         title="Title",
         date=None,
         content=content,
-        json_ld_valid=False # Broken JSON
+        json_ld_valid=False,  # Broken JSON
     )
-    
+
     results = list(spider.parse_item(response))
     assert len(results) == 1
-    assert results[0]['title'] == "Title"
+    assert results[0]["title"] == "Title"
+
 
 def test_parse_item_no_json_ld_uses_fallbacks(spider):
     """Test that spider correctly uses CSS fallbacks when JSON-LD is missing."""
-    today_date = datetime.now().strftime('%Y-%m-%d')
+    today_date = datetime.now().strftime("%Y-%m-%d")
     # HTML with no JSON-LD at all
     html = f"""
     <html>
@@ -147,21 +151,22 @@ def test_parse_item_no_json_ld_uses_fallbacks(spider):
     </html>
     """
     request = Request(url="https://wiadomosci.onet.pl/fallback-test")
-    response = HtmlResponse(url="https://wiadomosci.onet.pl/fallback-test", request=request, body=html.encode('utf-8'))
-    
+    response = HtmlResponse(url="https://wiadomosci.onet.pl/fallback-test", request=request, body=html.encode("utf-8"))
+
     results = list(spider.parse_item(response))
     assert len(results) == 1
     item = results[0]
-    
-    assert item['title'] == "Fallback Title Test"
-    assert item['author'] == "Fallback Author Name"
-    assert item['date'] == today_date
-    assert item['id'] == "fb123"
-    assert "fallback content" in item['content'].lower()
+
+    assert item["title"] == "Fallback Title Test"
+    assert item["author"] == "Fallback Author Name"
+    assert item["date"] == today_date
+    assert item["id"] == "fb123"
+    assert "fallback content" in item["content"].lower()
+
 
 def test_parse_item_id_from_url(spider):
     """Test that ID is extracted from URL when meta tag is missing."""
-    today_date = datetime.now().strftime('%Y-%m-%d')
+    today_date = datetime.now().strftime("%Y-%m-%d")
     html = f"""
     <html>
         <head>
@@ -183,16 +188,19 @@ def test_parse_item_id_from_url(spider):
     """
     # URL ends with alphanumeric ID
     request = Request(url="https://wiadomosci.onet.pl/kraj/tytul/abc123xyz")
-    response = HtmlResponse(url="https://wiadomosci.onet.pl/kraj/tytul/abc123xyz", request=request, body=html.encode('utf-8'))
-    
+    response = HtmlResponse(
+        url="https://wiadomosci.onet.pl/kraj/tytul/abc123xyz", request=request, body=html.encode("utf-8")
+    )
+
     results = list(spider.parse_item(response))
     assert len(results) == 1
     # ID should be extracted from URL regex
-    assert results[0]['id'] == "abc123xyz"
+    assert results[0]["id"] == "abc123xyz"
+
 
 def test_parse_item_author_fallback_chain(spider):
     """Test the author fallback chain (3 different selectors)."""
-    today_date = datetime.now().strftime('%Y-%m-%d')
+    today_date = datetime.now().strftime("%Y-%m-%d")
     # Test with second fallback selector
     html = f"""
     <html>
@@ -211,11 +219,12 @@ def test_parse_item_author_fallback_chain(spider):
     </html>
     """
     request = Request(url="https://wiadomosci.onet.pl/author-test")
-    response = HtmlResponse(url="https://wiadomosci.onet.pl/author-test", request=request, body=html.encode('utf-8'))
-    
+    response = HtmlResponse(url="https://wiadomosci.onet.pl/author-test", request=request, body=html.encode("utf-8"))
+
     results = list(spider.parse_item(response))
     assert len(results) == 1
-    assert results[0]['author'] == "Second Fallback Author"
+    assert results[0]["author"] == "Second Fallback Author"
+
 
 def test_parse_item_image_fallback(spider):
     """Test that image URL is extracted from og:image meta tag."""
@@ -232,17 +241,18 @@ def test_parse_item_image_fallback(spider):
             <p>Content must be longer than thirty characters to pass the dumb filter.</p>
         </body>
     </html>
-    """.format(datetime.now().strftime('%Y-%m-%d'))
+    """.format(datetime.now().strftime("%Y-%m-%d"))
     request = Request(url="https://wiadomosci.onet.pl/image-test")
-    response = HtmlResponse(url="https://wiadomosci.onet.pl/image-test", request=request, body=html.encode('utf-8'))
-    
+    response = HtmlResponse(url="https://wiadomosci.onet.pl/image-test", request=request, body=html.encode("utf-8"))
+
     results = list(spider.parse_item(response))
     assert len(results) == 1
-    assert results[0]['image_url'] == "http://example.com/fallback.jpg"
+    assert results[0]["image_url"] == "http://example.com/fallback.jpg"
+
 
 def test_parse_item_deep_fallbacks(spider):
     """Test specific 3rd/4th level fallbacks (authorName class, span.date)."""
-    today_date = datetime.now().strftime('%Y-%m-%d')
+    today_date = datetime.now().strftime("%Y-%m-%d")
     html = f"""
     <html>
         <head></head>
@@ -257,13 +267,11 @@ def test_parse_item_deep_fallbacks(spider):
     </html>
     """
     request = Request(url="https://wiadomosci.onet.pl/deep-fallback")
-    response = HtmlResponse(url="https://wiadomosci.onet.pl/deep-fallback", request=request, body=html.encode('utf-8'))
-    
+    response = HtmlResponse(url="https://wiadomosci.onet.pl/deep-fallback", request=request, body=html.encode("utf-8"))
+
     results = list(spider.parse_item(response))
     assert len(results) == 1
     item = results[0]
-    
-    assert item['author'] == "Deep Author"
-    assert item['date'] == today_date
 
-
+    assert item["author"] == "Deep Author"
+    assert item["date"] == today_date

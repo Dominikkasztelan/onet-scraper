@@ -1,64 +1,85 @@
 # Onet Scraper Pro
 
-Profesjonalny scraper danych z portalu Onet.pl, przygotowany do pracy produkcyjnej (24/7). Narzędzie pobiera artykuły, czyści treść z reklam i zapisuje dane w formacie JSONL.
+Profesjonalny scraper danych z portalu Onet.pl, przygotowany do pracy produkcyjnej (24/7). Narzędzie pobiera artykuły, czyści treść z reklam i zapisuje dane w formacie JSONL. Wykorzystuje sieć Tor do anonimizacji i rotacji IP.
 
 ## Funkcje
 
-*   **Bypass Anti-Bot**: Wykorzystuje hybrydowe podejście (Scrapy + `urllib`) do omijania prostych blokad i przekierowań.
+*   **Bypass Anti-Bot**: Wykorzystuje sieć Tor oraz `curl_cffi` (TLS Fingerprint Impersonation) do omijania zaawansowanych zabezpieczeń.
+*   **Rotacja IP**: Automatyczna zmiana tożsamości Tor w przypadku wykrycia blokady (403/Redirect).
 *   **Czyste Dane**: Automatyczne usuwanie sekcji "Dołącz do Premium" i reklam.
 *   **Bogate Metadane**: Pobieranie autora, sekcji tematycznej, daty publikacji i modyfikacji (z JSON-LD oraz fallbacków CSS).
-*   **Bezpieczeństwo**: Skonfigurowany User-Agent, opóźnienia (throttling) i wyłączone cookies.
+*   **Bezpieczeństwo**: Zarządzanie sekretami przez `.env` i brak hardcodowanych haseł.
 
 ## Wymagania
 
 *   Python 3.10+
-*   Biblioteki w `requirements.txt`
+*   Docker (opcjonalnie, do łatwego uruchomienia z Tor)
 
 ## Instalacja
 
-1.  Sklonuj repozytorium lub skopiuj pliki na serwer.
-2.  Utwórz wirtualne środowisko (zalecane):
+### Metoda 1: Docker Compose (Zalecane)
+
+Najszybszy sposób na uruchomienie scrapera wraz z wymaganą usługą Tor.
+
+1.  Sklonuj repozytorium.
+2.  Skopiuj przykładowy plik środowiskowy:
+    ```bash
+    cp .env.example .env
+    ```
+3.  Uruchom usługi:
+    ```bash
+    docker-compose up -d --build
+    ```
+    To uruchomi kontener `tor` oraz `scraper`. Scraper rozpocznie pracę automatycznie.
+
+4.  Sprawdź logi:
+    ```bash
+    docker-compose logs -f scraper
+    ```
+
+Dane będą zapisywane w katalogu `./data`.
+
+### Metoda 2: Lokalnie (Python Virtualenv)
+
+Wymaga zainstalowanego i działającego Tora na porcie 9050 (SOCKS) i 9051 (Control).
+
+1.  Utwórz wirtualne środowisko:
     ```bash
     python -m venv venv
     source venv/bin/activate  # Linux/Mac
     .\venv\Scripts\Activate   # Windows
     ```
-3.  Zainstaluj zależności:
+2.  Zainstaluj zależności:
     ```bash
     pip install -r requirements.txt
     ```
+3.  Skonfiguruj środowisko:
+    Utwórz plik `.env` (wzorując się na `.env.example`) i upewnij się, że `TOR_PROXY` wskazuje na Twoją instancję Tora.
 
-## Uruchomienie
+4.  Uruchom scraper:
+    ```bash
+    python -m scrapy crawl onet
+    ```
 
-### Lokalnie (Testy)
-Aby uruchomić scraper i zobaczyć logi w konsoli:
+## Development
+
+### Formatowanie kodu
+Projekt wykorzystuje `ruff` do dbania o jakość kodu. Przed commitem uruchom:
 ```bash
-python -m scrapy crawl onet
-```
-Dane trafią do nowo utworzonego pliku z sygnaturą czasową, np. `data_2026-01-15_18-30-00.jsonl`.
-
-### Na Serwerze (Produkcja / Linux VPS)
-Aby uruchomić proces w tle (nohup), który nie zostanie przerwany po wylogowaniu:
-
-```bash
-nohup python -m scrapy crawl onet > /dev/null 2>&1 &
-```
-*Uwaga: Logi w tym trybie są zapisywane do pliku `scraper.log` (zgodnie z ustawieniami w `settings.py`).*
-
-Monitorowanie logów na żywo:
-```bash
-tail -f scraper.log
+ruff format .
+ruff check . --fix
 ```
 
-## Testy
-Projekt posiada zestaw testów jednostkowych (pytest).
+### Testy
+Uruchom testy jednostkowe:
 ```bash
 python -m pytest
 ```
 
 ## Struktura Plików
-*   `onet_scraper/spiders/onet.py`: Główna logika pająka.
-*   `onet_scraper/middlewares.py`: Logika omijania blokad sieciowych.
-*   `onet_scraper/items.py`: Model danych (walidacja Pydantic).
-*   `onet_scraper/settings.py`: Konfiguracja produkcyjna (User-Agent, Throttling).
-*   `tests/`: Testy jednostkowe.
+*   `onet_scraper/`: Kod źródłowy Scrapy.
+    *   `spiders/`: Logika pająka.
+    *   `middlewares.py`: Rotacja IP i obsługa Tora.
+*   `tests/`: Testy `pytest`.
+*   `docker-compose.yml`: Definicja usług Docker.
+*   `.env`: Konfiguracja (nie commitować!).

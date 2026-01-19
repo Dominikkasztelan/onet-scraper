@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  tor:
+    image: osminogin/tor-simple:latest
+    container_name: onet-tor
+    ports:
+      - "9050:9050"
+      - "9051:9051"
+    environment:
+      - TOR_Log=notice stdout
+      # Enable Control Port for IP Rotation
+      - TOR_ControlPort=0.0.0.0:9051
+      # IMPORTANT: In production, set a hashed password here and in scraper .env
+      # For now using CookieAuth or open control port (be careful exposing 9051 externally)
+
+  scraper:
+    build: .
+    container_name: onet-scraper
+    depends_on:
+      - tor
+    environment:
+      # Use the service name 'tor' as the host
+      - TOR_PROXY=socks5://tor:9050
+      - TOR_CONTROL_PORT=9051
+      # Mount volumes to save data locally
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    # Keep container running or run crawl command
+    command: python -m scrapy crawl onet
