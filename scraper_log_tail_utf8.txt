@@ -1,0 +1,50 @@
+﻿ 'scrapy.spidermiddlewares.referer.RefererMiddleware',
+ 'scrapy.spidermiddlewares.urllength.UrlLengthMiddleware',
+ 'scrapy.spidermiddlewares.depth.DepthMiddleware']
+2026-01-21 15:56:38 [scrapy.middleware] INFO: Enabled item pipelines:
+['onet_scraper.pipelines.JsonWriterPipeline']
+2026-01-21 15:56:38 [py.warnings] WARNING: C:\Users\user\AppData\Roaming\Python\Python312-32\site-packages\scrapy\pipelines\__init__.py:41: ScrapyDeprecationWarning: JsonWriterPipeline.open_spider() requires a spider argument, this is deprecated and the argument will not be passed in future Scrapy versions. If you need to access the spider instance you can save the crawler instance passed to from_crawler() and use its spider attribute.
+  self._check_mw_method_spider_arg(pipe.open_spider)
+
+2026-01-21 15:56:38 [py.warnings] WARNING: C:\Users\user\AppData\Roaming\Python\Python312-32\site-packages\scrapy\pipelines\__init__.py:44: ScrapyDeprecationWarning: JsonWriterPipeline.close_spider() requires a spider argument, this is deprecated and the argument will not be passed in future Scrapy versions. If you need to access the spider instance you can save the crawler instance passed to from_crawler() and use its spider attribute.
+  self._check_mw_method_spider_arg(pipe.close_spider)
+
+2026-01-21 15:56:38 [py.warnings] WARNING: C:\Users\user\AppData\Roaming\Python\Python312-32\site-packages\scrapy\pipelines\__init__.py:47: ScrapyDeprecationWarning: JsonWriterPipeline.process_item() requires a spider argument, this is deprecated and the argument will not be passed in future Scrapy versions. If you need to access the spider instance you can save the crawler instance passed to from_crawler() and use its spider attribute.
+  self._check_mw_method_spider_arg(pipe.process_item)
+
+2026-01-21 15:56:38 [scrapy.core.engine] INFO: Spider opened
+2026-01-21 15:56:38 [onet] INFO: Saving data to data_2026-01-21_15-56-38.jsonl
+2026-01-21 15:56:38 [scrapy.extensions.logstats] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
+2026-01-21 15:56:38 [scrapy.extensions.telnet] INFO: Telnet console listening on 127.0.0.1:6023
+2026-01-21 15:56:40 [onet] ERROR: TorMiddleware Connection Error: Failed to perform, curl: (7) Failed to connect to 127.0.0.1 port 9050 after 2045 ms: Could not connect to server. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.. Rotating IP...
+2026-01-21 15:56:42 [onet_scraper.middlewares] ERROR: Failed to renew Tor identity: [WinError 10061] Nie moĹĽna nawiÄ…zaÄ‡ poĹ‚Ä…czenia, poniewaĹĽ komputer docelowy aktywnie go odmawia
+2026-01-21 15:56:44 [onet] ERROR: TorMiddleware Connection Error: Failed to perform, curl: (7) Failed to connect to 127.0.0.1 port 9050 after 2036 ms: Could not connect to server. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.. Rotating IP...
+2026-01-21 15:56:46 [onet_scraper.middlewares] ERROR: Failed to renew Tor identity: [WinError 10061] Nie moĹĽna nawiÄ…zaÄ‡ poĹ‚Ä…czenia, poniewaĹĽ komputer docelowy aktywnie go odmawia
+2026-01-21 15:56:48 [onet] ERROR: TorMiddleware Connection Error: Failed to perform, curl: (7) Failed to connect to 127.0.0.1 port 9050 after 2036 ms: Could not connect to server. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.. Rotating IP...
+2026-01-21 15:56:50 [onet_scraper.middlewares] ERROR: Failed to renew Tor identity: [WinError 10061] Nie moĹĽna nawiÄ…zaÄ‡ poĹ‚Ä…czenia, poniewaĹĽ komputer docelowy aktywnie go odmawia
+2026-01-21 15:56:50 [scrapy.downloadermiddlewares.retry] ERROR: Gave up retrying <GET https://wiadomosci.onet.pl/> (failed 3 times): 504 Gateway Time-out
+2026-01-21 15:56:51 [scrapy.spidermiddlewares.httperror] INFO: Ignoring response <504 https://wiadomosci.onet.pl/>: HTTP status code is not handled or not allowed
+2026-01-21 15:56:51 [scrapy.core.engine] INFO: Closing spider (finished)
+2026-01-21 15:56:51 [scrapy.statscollectors] INFO: Dumping Scrapy stats:
+{'downloader/response_bytes': 693,
+ 'downloader/response_count': 3,
+ 'downloader/response_status_count/504': 3,
+ 'elapsed_time_seconds': 12.461477,
+ 'finish_reason': 'finished',
+ 'finish_time': datetime.datetime(2026, 1, 21, 14, 56, 51, 214656, tzinfo=datetime.timezone.utc),
+ 'httperror/response_ignored_count': 1,
+ 'httperror/response_ignored_status_count/504': 1,
+ 'items_per_minute': 0.0,
+ 'log_count/ERROR': 7,
+ 'log_count/INFO': 4,
+ 'response_received_count': 1,
+ 'responses_per_minute': 5.0,
+ 'retry/count': 2,
+ 'retry/max_reached': 1,
+ 'retry/reason_count/504 Gateway Time-out': 2,
+ 'scheduler/dequeued': 3,
+ 'scheduler/dequeued/memory': 3,
+ 'scheduler/enqueued': 3,
+ 'scheduler/enqueued/memory': 3,
+ 'start_time': datetime.datetime(2026, 1, 21, 14, 56, 38, 753179, tzinfo=datetime.timezone.utc)}
+2026-01-21 15:56:51 [scrapy.core.engine] INFO: Spider closed (finished)

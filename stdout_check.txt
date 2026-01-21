@@ -1,0 +1,10 @@
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+CRITICAL ERROR: Tor is NOT running or unreachable at socks5://127.0.0.1:9050!
+Details: Port 9050 is closed or unreachable.
+Please start Tor before running the scraper.
+  - Docker: docker-compose up -d tor
+  - Local:  .\tor\tor.exe -f torrc
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+

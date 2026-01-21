@@ -3,6 +3,7 @@ import logging
 from typing import Any
 
 from curl_cffi import requests as curl_requests
+from scrapy.exceptions import CloseSpider
 from scrapy.http import HtmlResponse
 from stem import Signal
 from stem.control import Controller
@@ -53,7 +54,104 @@ class TorMiddleware:
         self.control_port = control_port
         self.password = password
         self.timeout = timeout
+        self.timeout = timeout
         self.max_retries = max_retries
+        self.check_tor_connection()
+
+    def check_tor_connection(self):
+        """Checks if Tor is listening on the configured SOCKS port, starts it if missing."""
+
+        host, port = self._parse_proxy_host_port()
+
+        if self._is_port_open(host, port):
+            logger.info("Tor is already running and accessible.")
+            return
+
+        logger.warning(f"Tor is NOT running at {host}:{port}. Attempting to start it automatically...")
+
+        if self._try_start_tor():
+            # Wait for Tor to bootstrap
+            if self._wait_for_port(host, port, timeout=20):
+                logger.info("Tor started successfully!")
+                return
+            else:
+                error_msg = "Tor started but port 9050 is still not accessible after 20s."
+        else:
+            error_msg = "Could not find 'tor/tor.exe' or failed to launch process."
+
+        # Final Error if recovery failed
+        final_msg = (
+            f"\n\n{'!' * 60}\nCRITICAL ERROR: {error_msg}\nPlease start Tor manually before running the scraper.\n{'!' * 60}\n"
+        )
+        print(final_msg)
+        logger.critical(final_msg)
+        raise CloseSpider(final_msg)
+
+    def _parse_proxy_host_port(self):
+        if "://" in self.tor_proxy:
+            host_port = self.tor_proxy.split("://")[1]
+        else:
+            host_port = self.tor_proxy
+        host, port = host_port.split(":")
+        return host, int(port)
+
+    def _is_port_open(self, host, port):
+        import socket
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1.0)
+        result = sock.connect_ex((host, port))
+        sock.close()
+        return result == 0
+
+    def _wait_for_port(self, host, port, timeout=20):
+        import time
+
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            if self._is_port_open(host, port):
+                return True
+            time.sleep(1)
+            print(f"Waiting for Tor to start... ({int(time.time() - start_time)}s)")
+        return False
+
+    def _try_start_tor(self):
+        import os
+        import subprocess
+
+        # Check standard location relative to project root
+        # Assuming we are in onet_scraper/middlewares.py -> go up two levels to root
+        # Project Root: c:\Users\user\Desktop\onet-scraper-pro-main
+        # Tor Path:     c:\Users\user\Desktop\onet-scraper-pro-main\tor\tor.exe
+
+        # Current file path
+        # current_dir = os.path.dirname(os.path.abspath(__file__))
+        # project_root = os.path.dirname(os.path.dirname(current_dir))  # Up from onet_scraper to root (Unused)
+
+        tor_exe = os.path.join("tor", "tor.exe")
+        torrc = "torrc"
+
+        if not os.path.exists(tor_exe):
+            # Fallback: try absolute check based on CWD (often root)
+            tor_exe = os.path.abspath("tor/tor.exe")
+
+        if not os.path.exists(tor_exe):
+            logger.error(f"Tor executable not found at: {tor_exe}")
+            return False
+
+        try:
+            logger.info(f"Starting Tor from: {tor_exe}")
+            # Start hidden process
+            subprocess.Popen(
+                [tor_exe, "-f", torrc],
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Failed to launch start Tor process: {e}")
+            return False
 
     @classmethod
     def from_crawler(cls, crawler):

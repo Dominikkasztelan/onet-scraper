@@ -8,7 +8,8 @@ from onet_scraper.middlewares import TorMiddleware
 
 @pytest.fixture
 def middleware():
-    return TorMiddleware(control_port=9051)
+    with patch("onet_scraper.middlewares.TorMiddleware.check_tor_connection"):
+        return TorMiddleware(control_port=9051)
 
 
 @pytest.fixture
@@ -25,9 +26,10 @@ def test_from_crawler_factory():
     crawler.settings.getint.return_value = 9051
     crawler.settings.get.side_effect = lambda k, d=None: "socks5://127.0.0.1:9050" if k == "TOR_PROXY" else d
 
-    middleware = TorMiddleware.from_crawler(crawler)
-    assert isinstance(middleware, TorMiddleware)
-    assert middleware.control_port == 9051
+    with patch("onet_scraper.middlewares.TorMiddleware.check_tor_connection"):
+        middleware = TorMiddleware.from_crawler(crawler)
+        assert isinstance(middleware, TorMiddleware)
+        assert middleware.control_port == 9051
 
 
 @pytest.mark.asyncio

@@ -8,7 +8,8 @@ from onet_scraper.middlewares import TorMiddleware
 
 @pytest.fixture
 def middleware():
-    return TorMiddleware(control_port=9051)
+    with patch("onet_scraper.middlewares.TorMiddleware.check_tor_connection"):
+        return TorMiddleware(control_port=9051)
 
 
 @pytest.fixture

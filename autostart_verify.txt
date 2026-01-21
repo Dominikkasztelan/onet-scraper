@@ -1,0 +1,2 @@
+C:\Users\user\AppData\Roaming\Python\Python312-32\site-packages\OpenSSL\_util.py:8: UserWarning: You are using cryptography on a 32-bit Python on a 64-bit Windows Operating System. Cryptography will be significantly faster if you switch to using a 64-bit Python.
+  from cryptography.hazmat.bindings.openssl.binding import Binding
