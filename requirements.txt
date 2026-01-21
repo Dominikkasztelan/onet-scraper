@@ -8,3 +8,5 @@ pytest-asyncio
 stem>=1.8.2
 python-dotenv
 ruff
+mypy
+pre-commit
