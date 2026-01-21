@@ -1,0 +1,13 @@
+﻿onet_scraper\settings.py:38: error: Unused "type: ignore" comment  [unused-ignore]
+onet_scraper\settings.py:51: error: Unused "type: ignore" comment  [unused-ignore]
+check_proxy.py:1: error: Unused "type: ignore" comment  [unused-ignore]
+check_proxy.py:8: error: Argument "proxies" to "get" has incompatible type "dict[str, str]"; expected "ProxySpec | None"  [arg-type]
+check_proxy.py:14: error: Argument "proxies" to "get" has incompatible type "dict[str, str]"; expected "ProxySpec | None"  [arg-type]
+onet_scraper\middlewares.py:97: error: Argument "impersonate" to "get" has incompatible type "str"; expected "Literal['edge99', 'edge101', 'chrome99', 'chrome100', 'chrome101', 'chrome104', 'chrome107', 'chrome110', 'chrome116', 'chrome119', 'chrome120', 'chrome123', 'chrome124', 'chrome131', 'chrome133a', 'chrome136', 'chrome142', 'chrome99_android', 'chrome131_android', 'safari153', 'safari155', 'safari170', 'safari172_ios', 'safari180', 'safari180_ios', 'safari184', 'safari184_ios', 'safari260', 'safari2601', 'safari260_ios', 'firefox133', 'firefox135', 'firefox144', 'tor145', 'chrome', 'edge', 'safari', 'safari_ios', 'safari_beta', 'safari_ios_beta', 'chrome_android', 'firefox', 'safari15_3', 'safari15_5', 'safari17_0', 'safari17_2_ios', 'safari18_0', 'safari18_0_ios', 'safari18_4', 'safari18_4_ios'] | None"  [arg-type]
+tests\test_middlewares_softban.py:28: error: Need type annotation for "mock_result"  [var-annotated]
+tests\test_middlewares.py:39: error: Need type annotation for "mock_result"  [var-annotated]
+tests\test_middlewares.py:55: error: Need type annotation for "mock_result"  [var-annotated]
+tests\test_utils_extractors.py:33: error: Argument 1 to "parse_is_recent" has incompatible type "None"; expected "str"  [arg-type]
+onet_scraper\spiders\onet.py:88: error: Argument 1 to "parse_is_recent" has incompatible type "str | None"; expected "str"  [arg-type]
+onet_scraper\spiders\onet.py:93: error: Argument "response" to "ArticleLoader" has incompatible type "Response"; expected "TextResponse | None"  [arg-type]
+Found 12 errors in 7 files (checked 23 source files)

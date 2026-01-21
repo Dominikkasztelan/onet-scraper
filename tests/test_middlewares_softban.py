@@ -25,7 +25,7 @@ async def test_soft_ban_302_redirect(middleware, spider):
 
     # Mock: followed redirect landed on homepage (soft ban detection)
     # New implementation uses allow_redirects=True, so we get final URL
-    mock_result = (200, b"<html>Homepage</html>", "https://www.onet.pl", {})
+    mock_result: tuple[int, bytes, str, dict[str, str]] = (200, b"<html>Homepage</html>", "https://www.onet.pl", {})
 
     # Mock stem Controller
     mock_controller = MagicMock()

@@ -1,5 +1,6 @@
 # Scrapy settings for onet_scraper project
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -9,13 +10,11 @@ BOT_NAME = "onet_scraper"
 SPIDER_MODULES = ["onet_scraper.spiders"]
 NEWSPIDER_MODULE = "onet_scraper.spiders"
 
-ADDONS = {}
+ADDONS = {}  # type: ignore
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 # Using a standard browser UA to blend in (Works on Windows/Linux)
-USER_AGENT = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-)
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
@@ -41,7 +40,7 @@ DOWNLOADER_MIDDLEWARES = {
 # Tor Settings
 TOR_PROXY = "socks5://127.0.0.1:9050"
 TOR_CONTROL_PORT = 9051
-TOR_PASSWORD = os.getenv("TOR_PASSWORD")
+TOR_PASSWORD = os.getenv("TOR_PASSWORD", "")
 TOR_CONNECTION_TIMEOUT = 30  # Timeout for Tor requests in seconds
 TOR_MAX_RETRIES = 3
 

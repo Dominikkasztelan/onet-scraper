@@ -68,7 +68,7 @@ def extract_json_ld(response: Response) -> Dict[str, Optional[str]]:
     return metadata
 
 
-def parse_is_recent(date_str: str, days_limit: int = 3) -> bool:
+def parse_is_recent(date_str: Optional[str], days_limit: int = 3) -> bool:
     """
     Checks if a date string (YYYY-MM-DD...) is within the last `days_limit` days.
     """

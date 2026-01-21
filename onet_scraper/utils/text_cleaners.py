@@ -2,6 +2,7 @@ import json
 import logging
 from functools import lru_cache
 from pathlib import Path
+from typing import cast
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,7 @@ def load_cleaning_rules() -> dict[str, list[str]]:
     Loads cleaning rules from resources/cleaning_rules.json.
     Cached explicitly to avoid repeated I/O.
     """
-    default_rules = {"scam_phrases": [], "cutoff_markers": []}
+    default_rules: dict[str, list[str]] = {"scam_phrases": [], "cutoff_markers": []}
     try:
         current_dir = Path(__file__).parent
         # Go up one level to onet_scraper, then to resources
@@ -23,7 +24,8 @@ def load_cleaning_rules() -> dict[str, list[str]]:
             return default_rules
 
         with open(config_path, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data: dict[str, list[str]] = cast(dict[str, list[str]], json.load(f))
+            return data
     except (OSError, json.JSONDecodeError) as e:
         logger.error(f"Failed to load cleaning rules: {e}")
         return default_rules

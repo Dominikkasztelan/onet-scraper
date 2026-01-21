@@ -36,7 +36,12 @@ async def test_process_request_intercepts_onet(middleware, spider):
     request = Request(url="https://wiadomosci.onet.pl/artykul")
 
     # Mock the synchronous request result (status, content, url, headers)
-    mock_result = (200, b"<html>Test Content</html>", "https://wiadomosci.onet.pl/artykul", {})
+    mock_result: tuple[int, bytes, str, dict[str, str]] = (
+        200,
+        b"<html>Test Content</html>",
+        "https://wiadomosci.onet.pl/artykul",
+        {},
+    )
 
     with patch.object(middleware, "_sync_make_request", return_value=mock_result):
         result = await middleware.process_request(request, spider)
@@ -52,7 +57,7 @@ async def test_tor_rotation_on_403(middleware, spider):
     request = Request(url="https://wiadomosci.onet.pl/blocked")
 
     # Mock 403 response
-    mock_result = (403, b"Access Denied", "https://wiadomosci.onet.pl/blocked", {})
+    mock_result: tuple[int, bytes, str, dict[str, str]] = (403, b"Access Denied", "https://wiadomosci.onet.pl/blocked", {})
 
     # Mock stem Controller
     mock_controller = MagicMock()
@@ -79,8 +84,6 @@ async def test_profile_rotation(middleware, spider):
     request = Request(url="https://wiadomosci.onet.pl/test")
 
     profiles_used = []
-
-    original_method = middleware._sync_make_request
 
     def capture_profile(url, profile):
         profiles_used.append(profile)

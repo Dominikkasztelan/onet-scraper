@@ -9,6 +9,6 @@ repos:
     hooks:
       - id: mypy
         name: mypy
-        entry: mypy
+        entry: python -m mypy
         language: system
         types: [python]

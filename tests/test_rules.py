@@ -27,7 +27,7 @@ def test_rules_match_article_urls():
     invalid_urls = [
         "https://wiadomosci.onet.pl/tylko-kategoria/cos",  # Too short depth
         "https://wiadomosci.onet.pl/kraj/tytul",  # Missing ID
-        "https://wiadomosci.onet.pl/oferta/reklama/123",  # Contains 'oferta' which is denied in another param, but LinkExtractor logic is complex to test fully without link object.
+        "https://wiadomosci.onet.pl/oferta/reklama/123",  # Contains 'oferta' (denied)
         # Ideally we test LinkExtractor.extract_links but that requires Response object.
     ]
 
@@ -41,9 +41,7 @@ def test_rules_match_article_urls():
     for url in valid_urls + invalid_urls:
         link_html += f'<a href="{url}" class="ods-c-card-wrapper">Link</a>\n'
 
-    response = HtmlResponse(
-        url="https://wiadomosci.onet.pl/", body=f"<html><body>{link_html}</body></html>".encode("utf-8")
-    )
+    response = HtmlResponse(url="https://wiadomosci.onet.pl/", body=f"<html><body>{link_html}</body></html>".encode("utf-8"))
 
     links = extractor.extract_links(response)
     extracted_urls = [link.url for link in links]
@@ -72,9 +70,7 @@ def test_rules_deny_patterns():
     for url in denied_urls:
         link_html += f'<a href="{url}" class="ods-c-card-wrapper">Link</a>\n'
 
-    response = HtmlResponse(
-        url="https://wiadomosci.onet.pl/", body=f"<html><body>{link_html}</body></html>".encode("utf-8")
-    )
+    response = HtmlResponse(url="https://wiadomosci.onet.pl/", body=f"<html><body>{link_html}</body></html>".encode("utf-8"))
 
     links = extractor.extract_links(response)
     extracted_urls = [link.url for link in links]

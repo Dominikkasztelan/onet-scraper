@@ -74,7 +74,25 @@ ruff check . --fix
 Uruchom testy jednostkowe:
 ```bash
 python -m pytest
+```bash
+python -m pytest
 ```
+
+### Kontrola Jakości (Type Checking & Linting)
+Uruchom statyczną analizę typów (Mypy):
+```bash
+python -m mypy .
+```
+Jeśli zobaczysz błędy, sprawdź konfigurację w `pyproject.toml` lub dodaj `# type: ignore` w uzasadnionych przypadkach.
+
+### CI/CD (GitHub Actions)
+Projekt posiada skonfigurowane akcje GitHub w folderze `.github/workflows`:
+- **Python Quality Check**: Uruchamia się przy każdym pushu/PR. Sprawdza:
+    - Formatowanie (`ruff format --check`)
+    - Linter (`ruff check`)
+    - Typowanie (`mypy`)
+    - Testy (`pytest`)
+Wyniki są widoczne w zakładce "Actions" na GitHubie. Zielony "ptaszek" oznacza, że kod jest bezpieczny do wdrożenia.
 
 ## Struktura Plików
 *   `onet_scraper/`: Kod źródłowy Scrapy.

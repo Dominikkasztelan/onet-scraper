@@ -188,9 +188,7 @@ def test_parse_item_id_from_url(spider):
     """
     # URL ends with alphanumeric ID
     request = Request(url="https://wiadomosci.onet.pl/kraj/tytul/abc123xyz")
-    response = HtmlResponse(
-        url="https://wiadomosci.onet.pl/kraj/tytul/abc123xyz", request=request, body=html.encode("utf-8")
-    )
+    response = HtmlResponse(url="https://wiadomosci.onet.pl/kraj/tytul/abc123xyz", request=request, body=html.encode("utf-8"))
 
     results = list(spider.parse_item(response))
     assert len(results) == 1

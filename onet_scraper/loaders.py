@@ -1,4 +1,3 @@
-
 from itemloaders.processors import Compose, MapCompose, TakeFirst
 from scrapy.loader import ItemLoader
 from w3lib.html import remove_tags

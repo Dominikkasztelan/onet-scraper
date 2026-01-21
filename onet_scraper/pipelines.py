@@ -2,8 +2,6 @@ import json
 from datetime import datetime
 from typing import Any
 
-from scrapy.exceptions import DropItem
-
 
 class JsonWriterPipeline:
     def __init__(self):
@@ -46,5 +44,5 @@ class JsonWriterPipeline:
         except Exception as e:
             spider.logger.error(f"Error writing item to file: {e}")
             # Optionally drop item or raise generic error
-        
+
         return item

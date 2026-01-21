@@ -1,8 +1,8 @@
 import re
 from collections.abc import Generator
-from typing import Any
+from typing import Any, cast
 
-from scrapy.http import Response
+from scrapy.http import Response, TextResponse
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
 
@@ -39,9 +39,7 @@ class OnetSpider(CrawlSpider):
 
     rules = (
         Rule(
-            LinkExtractor(
-                allow=(r"archiwum", r"20\d\d-", r"pogoda", r"sport"), deny_domains=["przegladsportowy.onet.pl"]
-            ),
+            LinkExtractor(allow=(r"archiwum", r"20\d\d-", r"pogoda", r"sport"), deny_domains=["przegladsportowy.onet.pl"]),
             process_request="skip_request",
         ),
         # Rule for Articles
@@ -64,9 +62,7 @@ class OnetSpider(CrawlSpider):
             follow=True,
         ),
         # Rule for Pagination (Next Page)
-        Rule(
-            LinkExtractor(allow=(r"wiadomosci.onet.pl"), restrict_xpaths='//a[contains(@class, "next")]'), follow=True
-        ),
+        Rule(LinkExtractor(allow=(r"wiadomosci.onet.pl"), restrict_xpaths='//a[contains(@class, "next")]'), follow=True),
     )
 
     def skip_request(self, request: Any, response: Response) -> None:
@@ -94,57 +90,57 @@ class OnetSpider(CrawlSpider):
             return
 
         # 3. Initialize Loader
-        l = ArticleLoader(item={}, response=response)
+        loader = ArticleLoader(item={}, response=cast(TextResponse, response))
 
         # 4. Populate Fields
 
         # Title
-        l.add_css("title", "h1::text")
+        loader.add_css("title", "h1::text")
 
         # URL
-        l.add_value("url", response.url)
+        loader.add_value("url", response.url)
 
         # Date (Priority: Metadata -> CSS -> XPath)
-        l.add_value("date", metadata.get("datePublished"))
-        l.add_css("date", ".ods-m-date-authorship__publication::text")
-        l.add_xpath("date", '//span[contains(@class, "date")]/text()')
+        loader.add_value("date", metadata.get("datePublished"))
+        loader.add_css("date", ".ods-m-date-authorship__publication::text")
+        loader.add_xpath("date", '//span[contains(@class, "date")]/text()')
 
         # Content - Logic: Prefer hyphenate, fallback to p
         # Check if hyphenate yields any actual text (not just whitespace)
         hyphenate_texts = response.css(".hyphenate::text").getall()
         if any(t.strip() for t in hyphenate_texts):
-            l.add_css("content", ".hyphenate::text")
+            loader.add_css("content", ".hyphenate::text")
         else:
             # Fallback for pages without hyphenate class
-            l.add_css("content", "p::text")
+            loader.add_css("content", "p::text")
 
         # Lead
-        l.add_css("lead", "#lead::text")
+        loader.add_css("lead", "#lead::text")
 
         # Author (Priority: Metadata -> CSS selectors)
-        l.add_value("author", metadata.get("author"))
-        l.add_css("author", ".ods-m-author-xl__name-link::text")
-        l.add_css("author", ".ods-m-author-xl__name::text")
-        l.add_css("author", ".authorName::text")
+        loader.add_value("author", metadata.get("author"))
+        loader.add_css("author", ".ods-m-author-xl__name-link::text")
+        loader.add_css("author", ".ods-m-author-xl__name::text")
+        loader.add_css("author", ".authorName::text")
 
         # Meta Fields
-        l.add_value("keywords", response.xpath('//meta[@name="keywords"]/@content').get())
-        l.add_value("section", metadata.get("articleSection"))
-        l.add_value("date_modified", metadata.get("dateModified"))
+        loader.add_value("keywords", response.xpath('//meta[@name="keywords"]/@content').get())
+        loader.add_value("section", metadata.get("articleSection"))
+        loader.add_value("date_modified", metadata.get("dateModified"))
 
         # Image
-        l.add_value("image_url", metadata.get("image_url"))
-        l.add_xpath("image_url", '//meta[@property="og:image"]/@content')
+        loader.add_value("image_url", metadata.get("image_url"))
+        loader.add_xpath("image_url", '//meta[@property="og:image"]/@content')
 
         # ID
-        l.add_xpath("id", '//meta[@name="data-story-id"]/@content')
+        loader.add_xpath("id", '//meta[@name="data-story-id"]/@content')
         # Fallback ID from URL
         id_match = self.ID_PATTERN.search(response.url)
         if id_match:
-            l.add_value("id", id_match.group(1))
+            loader.add_value("id", id_match.group(1))
 
         # 5. Load Item
-        item_data = l.load_item()
+        item_data = loader.load_item()
 
         # 6. Post-processing (Read Time & Final Checks)
         clean_content = item_data.get("content", "")

@@ -86,9 +86,7 @@ class TorMiddleware:
         """Signals Tor to change identity (get new IP) - async wrapper."""
         await asyncio.to_thread(self._sync_renew_identity)
 
-    def _sync_make_request(
-        self, url: str, profile: str
-    ) -> tuple[int, bytes, str, dict[str, Any]]:
+    def _sync_make_request(self, url: str, profile: str) -> tuple[int, bytes, str, dict[str, Any]]:
         """
         Synchronous HTTP request via curl_cffi with Tor proxy.
         Returns: (status_code, content, final_url, headers)
@@ -96,7 +94,7 @@ class TorMiddleware:
         try:
             response = curl_requests.get(
                 url,
-                impersonate=profile,
+                impersonate=profile,  # type: ignore
                 proxies={"http": self.tor_proxy, "https": self.tor_proxy},
                 timeout=self.timeout,
                 allow_redirects=True,
@@ -120,9 +118,7 @@ class TorMiddleware:
 
         try:
             # Run synchronous request in a thread to avoid blocking the event loop
-            status_code, content, final_url, headers = await asyncio.to_thread(
-                self._sync_make_request, request.url, profile
-            )
+            status_code, content, final_url, headers = await asyncio.to_thread(self._sync_make_request, request.url, profile)
 
             # Detect soft ban: redirected to homepage when requesting an article
             is_soft_ban = "wiadomosci" in request.url and final_url.rstrip("/") in [
@@ -132,14 +128,10 @@ class TorMiddleware:
             ]
 
             if status_code in [403, 503] or is_soft_ban:
-                ban_type = (
-                    "Soft Ban (Redirect)" if is_soft_ban else f"Block ({status_code})"
-                )
-                spider.logger.warning(
-                    f"TorMiddleware: {ban_type}! Rotating IP and Retrying..."
-                )
+                ban_type = "Soft Ban (Redirect)" if is_soft_ban else f"Block ({status_code})"
+                spider.logger.warning(f"TorMiddleware: {ban_type}! Rotating IP and Retrying...")
                 await self._renew_tor_identity()
-                
+
                 # Signal Scrapy to retry the request (by returning a Response with a retry-able status or raising DoNotProcess)
                 # But here we just return 504 (Gateway Timeout) to trigger Scrapy's retry middleware if enabled, or just fail.
                 # Returning 504 is a reasonable way to say "Proxy failed".
