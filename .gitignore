@@ -11,6 +11,8 @@ ENV/
 *.log
 
 # --- Wyniki działania (Dane nie idą do repo!) ---
+data/
+logs/
 *.json
 *.jsonl
 *.csv

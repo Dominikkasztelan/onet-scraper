@@ -28,7 +28,15 @@ def test_open_spider_creates_timestamped_file(pipeline, spider, mocker):
 
     pipeline.open_spider(spider)
 
-    expected_filename = f"data_{fixed_time}.jsonl"
+    # Check if os.makedirs was called
+    # Note: We need to mock os in the pipeline module scope if we want to verify it,
+    # but since we just imported it inside the method, we rely on the file path check.
+
+    # Construct expected path using os.path.join to match system separator
+    import os
+
+    expected_filename = os.path.join("data", f"data_{fixed_time}.jsonl")
+
     mocked_open.assert_called_once_with(expected_filename, "w", encoding="utf-8")
     assert pipeline.filename == expected_filename
 

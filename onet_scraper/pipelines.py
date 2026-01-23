@@ -14,8 +14,11 @@ class JsonWriterPipeline:
 
     def open_spider(self, spider: Any) -> None:
         try:
+            import os
+
+            os.makedirs("data", exist_ok=True)
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            self.filename = f"data_{timestamp}.jsonl"
+            self.filename = os.path.join("data", f"data_{timestamp}.jsonl")
             self.file = open(self.filename, "w", encoding="utf-8")
             spider.logger.info(f"Saving data to {self.filename}")
         except Exception as e:

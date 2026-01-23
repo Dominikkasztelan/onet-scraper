@@ -28,7 +28,9 @@ COOKIES_ENABLED = False
 
 # Logging Configuration (Cross-platform compatible)
 # Log to a file named 'scraper.log' in the project root
-LOG_FILE = os.path.join(os.getcwd(), "scraper.log")
+if not os.path.exists("logs"):
+    os.makedirs("logs")
+LOG_FILE = os.path.join(os.getcwd(), "logs", "scraper.log")
 LOG_LEVEL = "INFO"
 
 # Enable or disable downloader middlewares
