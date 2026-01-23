@@ -9,7 +9,7 @@ def analyze_jsonl(filepath):
     with_keywords = 0
     with_content = 0
     with_title = 0
-    keyword_counts = Counter()
+    keyword_counts: Counter[str] = Counter()
 
     print(f"Analyzing {filepath}...")
 

@@ -3,7 +3,7 @@ from collections import Counter
 from pathlib import Path
 
 
-def analyze_file(filepath):
+def analyze_file(filepath: Path | str) -> None:
     """Analyze JSONL file and return statistics."""
 
     total = 0
@@ -12,7 +12,7 @@ def analyze_file(filepath):
     with_title = 0
     empty_keywords = 0
 
-    keyword_counter = Counter()
+    keyword_counter: Counter[str] = Counter()
 
     with open(filepath, "r", encoding="utf-8") as f:
         for line in f:
