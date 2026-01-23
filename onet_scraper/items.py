@@ -5,7 +5,6 @@ class ArticleItem(BaseModel):
     title: str
     url: str
     date: str  # Kept as str to match scraped format, could be datetime in future
-    lead: str | None = None
     content: str | None = None
 
     # New production fields

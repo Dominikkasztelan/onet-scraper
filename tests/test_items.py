@@ -9,7 +9,6 @@ def test_article_item_validation():
         title="Valid Title",
         url="http://onet.pl/valid",
         date="2026-01-01",
-        lead="Some lead",
         content="Some content",
         id="123",
     )
@@ -46,7 +45,6 @@ def test_article_item_optional_fields():
         date="2026-01-01",
         # All other fields default to None
     )
-    assert item.lead is None
     assert item.content is None
     assert item.author is None
     assert item.keywords is None
