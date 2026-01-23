@@ -1,3 +1,4 @@
+import json
 import re
 from collections.abc import Generator
 from typing import Any, cast
@@ -124,7 +125,25 @@ class OnetSpider(CrawlSpider):
         loader.add_css("author", ".authorName::text")
 
         # Meta Fields
-        loader.add_value("keywords", response.xpath('//meta[@name="keywords"]/@content').get())
+        # Keywords extraction (Meta -> Regex from JS)
+        keywords = response.xpath('//meta[@name="keywords"]/@content').get()
+        if not keywords:
+            # Fallback: Extract from JS "keywords":["val1", "val2"]
+            try:
+                # Search for "keywords":[...] pattern
+                pattern = r'"keywords":\s*(\[[^\]]+\])'
+                match = re.search(pattern, response.text)
+                if match:
+                    json_array = match.group(1)
+                    keywords_list = json.loads(json_array)
+                    if isinstance(keywords_list, list):
+                        # Filter out internal/tracking keywords if needed, or keep all
+                        # For now, join them with comma to match string format expected by item
+                        keywords = ", ".join([str(k) for k in keywords_list if k])
+            except Exception as e:
+                self.logger.warning(f"Failed to extract keywords via regex for {response.url}: {e}")
+
+        loader.add_value("keywords", keywords)
         loader.add_value("section", metadata.get("articleSection"))
         loader.add_value("date_modified", metadata.get("dateModified"))
 
