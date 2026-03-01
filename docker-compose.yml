@@ -16,7 +16,7 @@ services:
     environment:
       POSTGRES_DB: scraper
       POSTGRES_USER: scraper
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-scraper_dev}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?database password must be set in .env}
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
@@ -32,7 +32,7 @@ services:
       - TOR_PROXY=socks5://tor:9050
       - TOR_CONTROL_PORT=9051
       - TOR_ENABLED=true
-      - DATABASE_URL=postgresql://scraper:${DB_PASSWORD:-scraper_dev}@db:5432/scraper
+      - DATABASE_URL=postgresql://scraper:${DB_PASSWORD:?database password must be set in .env}@db:5432/scraper
     volumes:
       - ./logs:/app/logs
     command: python -m scrapy crawl onet

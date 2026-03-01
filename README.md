@@ -69,7 +69,7 @@ Uruchom: `python -m scrapy crawl nowy`
 | `TOR_ENABLED` | `True` = through Tor, `False` = bezpośrednio | `False` |
 | `TOR_PASSWORD` | Hasło do Tor Control Port | `` |
 | `DATABASE_URL` | SQLite lub PostgreSQL URL | `sqlite:///data/articles.db` |
-| `DB_PASSWORD` | Hasło PostgreSQL (Docker) | `scraper_dev` |
+| `DB_PASSWORD` | Hasło PostgreSQL (Docker) | `change_me_in_env` |
 
 ## Struktura projektu
 
