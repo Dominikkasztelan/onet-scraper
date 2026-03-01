@@ -10,3 +10,5 @@ python-dotenv
 ruff
 mypy
 pre-commit
+sqlalchemy>=2.0
+psycopg2-binary

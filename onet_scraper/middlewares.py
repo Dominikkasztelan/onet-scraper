@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import Any
 
-from curl_cffi import requests as curl_requests
+from curl_cffi.requests import AsyncSession
 from scrapy.exceptions import CloseSpider
 from scrapy.http import HtmlResponse
 from stem import Signal
@@ -48,6 +48,7 @@ class TorMiddleware:
         password: str | None = None,
         timeout: int = 30,
         max_retries: int = 3,
+        use_tor: bool = True,
     ):
         self._profile_index = 0
         self.tor_proxy = tor_proxy
@@ -56,7 +57,9 @@ class TorMiddleware:
         self.timeout = timeout
         self.timeout = timeout
         self.max_retries = max_retries
-        self.check_tor_connection()
+        self.use_tor = use_tor
+        if self.use_tor:
+            self.check_tor_connection()
 
     def check_tor_connection(self):
         """Checks if Tor is listening on the configured SOCKS port, starts it if missing."""
@@ -161,6 +164,7 @@ class TorMiddleware:
             password=crawler.settings.get("TOR_PASSWORD", None),
             timeout=crawler.settings.getint("TOR_CONNECTION_TIMEOUT", 30),
             max_retries=crawler.settings.getint("TOR_MAX_RETRIES", 3),
+            use_tor=crawler.settings.getbool("TOR_ENABLED", True),
         )
 
     def _get_next_profile(self) -> str:
@@ -184,25 +188,26 @@ class TorMiddleware:
         """Signals Tor to change identity (get new IP) - async wrapper."""
         await asyncio.to_thread(self._sync_renew_identity)
 
-    def _sync_make_request(self, url: str, profile: str) -> tuple[int, bytes, str, dict[str, Any]]:
+    async def _async_make_request(self, url: str, profile: str) -> tuple[int, bytes, str, dict[str, Any]]:
         """
-        Synchronous HTTP request via curl_cffi with Tor proxy.
+        Asynchronous HTTP request via curl_cffi.
+        Uses Tor proxy if use_tor=True, otherwise connects directly.
         Returns: (status_code, content, final_url, headers)
         """
         try:
-            response = curl_requests.get(
-                url,
+            proxies = {"http": self.tor_proxy, "https": self.tor_proxy} if self.use_tor else None
+            async with AsyncSession(
                 impersonate=profile,  # type: ignore
-                proxies={"http": self.tor_proxy, "https": self.tor_proxy},
+                proxies=proxies,  # type: ignore[arg-type]  # curl_cffi stubs mismatch
                 timeout=self.timeout,
-                allow_redirects=True,
-            )
-            return (
-                response.status_code,
-                response.content,
-                str(response.url),
-                dict(response.headers),
-            )
+            ) as session:
+                response = await session.get(url, allow_redirects=True)
+                return (
+                    response.status_code,
+                    response.content,
+                    str(response.url),
+                    dict(response.headers),
+                )
         except Exception as e:
             # Re-raise to be caught by the caller
             raise e
@@ -215,8 +220,8 @@ class TorMiddleware:
         spider.logger.debug(f"TorMiddleware: [{profile}] {request.url}")
 
         try:
-            # Run synchronous request in a thread to avoid blocking the event loop
-            status_code, content, final_url, headers = await asyncio.to_thread(self._sync_make_request, request.url, profile)
+            # Run asynchronous request directly
+            status_code, content, final_url, headers = await self._async_make_request(request.url, profile)
 
             # Detect soft ban: redirected to homepage when requesting an article
             is_soft_ban = "wiadomosci" in request.url and final_url.rstrip("/") in [

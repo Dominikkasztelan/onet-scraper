@@ -45,7 +45,10 @@ async def test_process_request_intercepts_onet(middleware, spider):
         {},
     )
 
-    with patch.object(middleware, "_sync_make_request", return_value=mock_result):
+    async def mock_make_request(*args, **kwargs):
+        return mock_result
+
+    with patch.object(middleware, "_async_make_request", side_effect=mock_make_request):
         result = await middleware.process_request(request, spider)
 
         assert isinstance(result, HtmlResponse)
@@ -66,7 +69,7 @@ async def test_tor_rotation_on_403(middleware, spider):
     mock_controller_enter = MagicMock(return_value=mock_controller)
 
     with (
-        patch.object(middleware, "_sync_make_request", return_value=mock_result),
+        patch.object(middleware, "_async_make_request", return_value=mock_result),
         patch("stem.control.Controller.from_port") as mock_from_port,
     ):
         mock_from_port.return_value.__enter__ = mock_controller_enter
@@ -87,11 +90,11 @@ async def test_profile_rotation(middleware, spider):
 
     profiles_used = []
 
-    def capture_profile(url, profile):
+    async def capture_profile(url, profile):
         profiles_used.append(profile)
         return (200, b"<html></html>", url, {})
 
-    with patch.object(middleware, "_sync_make_request", side_effect=capture_profile):
+    with patch.object(middleware, "_async_make_request", side_effect=capture_profile):
         for _ in range(3):
             await middleware.process_request(request, spider)
 

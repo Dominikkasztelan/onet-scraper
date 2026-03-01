@@ -32,8 +32,11 @@ async def test_soft_ban_302_redirect(middleware, spider):
     mock_controller = MagicMock()
     mock_controller_enter = MagicMock(return_value=mock_controller)
 
+    async def mock_make_request(*args, **kwargs):
+        return mock_result
+
     with (
-        patch.object(middleware, "_sync_make_request", return_value=mock_result),
+        patch.object(middleware, "_async_make_request", side_effect=mock_make_request),
         patch("stem.control.Controller.from_port") as mock_from_port,
     ):
         mock_from_port.return_value.__enter__ = mock_controller_enter

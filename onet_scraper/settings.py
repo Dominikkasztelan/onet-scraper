@@ -1,5 +1,6 @@
 # Scrapy settings for onet_scraper project
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -28,9 +29,13 @@ COOKIES_ENABLED = False
 
 # Logging Configuration (Cross-platform compatible)
 # Log to a file named 'scraper.log' in the project root
-if not os.path.exists("logs"):
-    os.makedirs("logs")
-LOG_FILE = os.path.join(os.getcwd(), "logs", "scraper.log")
+BASE_DIR = Path(__file__).resolve().parent.parent
+LOG_DIR = BASE_DIR / "logs"
+
+if not LOG_DIR.exists():
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+LOG_FILE = str(LOG_DIR / "scraper.log")
 LOG_LEVEL = "INFO"
 
 # Enable or disable downloader middlewares
@@ -43,13 +48,20 @@ DOWNLOADER_MIDDLEWARES = {
 TOR_PROXY = "socks5://127.0.0.1:9050"
 TOR_CONTROL_PORT = 9051
 TOR_PASSWORD = os.getenv("TOR_PASSWORD", "")
+TOR_ENABLED = False  # Set to True when Tor is running (production). False = direct connection (testing)
 TOR_CONNECTION_TIMEOUT = 30  # Timeout for Tor requests in seconds
 TOR_MAX_RETRIES = 3
 
+# Database Configuration
+# Default: SQLite (zero-config, for local use)
+# Production: set DATABASE_URL=postgresql://user:pass@host:5432/dbname in .env
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///data/articles.db")
+
 # Configure item pipelines
-# See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    "onet_scraper.pipelines.JsonWriterPipeline": 300,
+    "onet_scraper.pipelines.PydanticValidationPipeline": 100,
+    "onet_scraper.pipelines.DatabasePipeline": 300,
+    # "onet_scraper.pipelines.JsonWriterPipeline": 400,  # Uncomment for JSONL export (debugging)
 }
 
 # Set settings whose default value is deprecated to a future-proof value

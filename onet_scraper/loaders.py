@@ -36,6 +36,9 @@ class ArticleLoader(ItemLoader):
     # Author
     author_in = MapCompose(filter_empty, remove_tags)
 
+    # Lead / Summary
+    lead_in = MapCompose(filter_empty, remove_tags)
+
     # Image
     image_url_in = MapCompose(filter_empty)
 

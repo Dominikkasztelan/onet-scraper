@@ -1,5 +1,3 @@
-import json
-
 import pytest
 
 from onet_scraper.pipelines import JsonWriterPipeline
@@ -25,6 +23,7 @@ def test_open_spider_creates_timestamped_file(pipeline, spider, mocker):
 
     # Mock open and json dump if needed (not needed for open_spider)
     mocked_open = mocker.patch("builtins.open", mocker.mock_open())
+    mocked_exporter = mocker.patch("onet_scraper.pipelines.JsonLinesItemExporter")
 
     pipeline.open_spider(spider)
 
@@ -37,27 +36,29 @@ def test_open_spider_creates_timestamped_file(pipeline, spider, mocker):
 
     expected_filename = os.path.join("data", f"data_{fixed_time}.jsonl")
 
-    mocked_open.assert_called_once_with(expected_filename, "w", encoding="utf-8")
-    assert pipeline.filename == expected_filename
+    mocked_open.assert_called_once_with(expected_filename, "wb")
+    mocked_exporter.assert_called_once()
 
 
 def test_process_item_writes_jsonl(pipeline, spider, mocker):
     # Setup pipeline with a mocked file handle
-    mock_file = mocker.MagicMock()
-    pipeline.file = mock_file
+    mock_exporter = mocker.MagicMock()
+    pipeline.exporter = mock_exporter
 
     item = {"title": "Test Title", "url": "http://test.com"}
 
     pipeline.process_item(item, spider)
 
-    expected_line = json.dumps(item, ensure_ascii=False) + "\n"
-    mock_file.write.assert_called_once_with(expected_line)
+    mock_exporter.export_item.assert_called_once_with(item)
 
 
 def test_close_spider_closes_file(pipeline, spider, mocker):
     mock_file = mocker.MagicMock()
+    mock_exporter = mocker.MagicMock()
     pipeline.file = mock_file
+    pipeline.exporter = mock_exporter
 
     pipeline.close_spider(spider)
 
+    mock_exporter.finish_exporting.assert_called_once()
     mock_file.close.assert_called_once()

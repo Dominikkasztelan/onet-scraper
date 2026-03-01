@@ -2,12 +2,16 @@ from pydantic import BaseModel, field_validator
 
 
 class ArticleItem(BaseModel):
+    # Source identifier — which site this article came from
+    source: str = ""
+
     title: str
     url: str
     date: str  # Kept as str to match scraped format, could be datetime in future
     content: str | None = None
 
-    # New production fields
+    # Production fields
+    lead: str | None = None
     author: str | None = None
     keywords: str | None = None
     section: str | None = None

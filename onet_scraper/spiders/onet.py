@@ -1,26 +1,20 @@
-import json
-import re
-from collections.abc import Generator
-from typing import Any, cast
-
-from scrapy.http import Response, TextResponse
+from scrapy.http import Response
 from scrapy.linkextractors import LinkExtractor
-from scrapy.spiders import CrawlSpider, Rule
+from scrapy.spiders import Rule
 
-from onet_scraper.items import ArticleItem
 from onet_scraper.loaders import ArticleLoader
-
-# SRP Utils
-from onet_scraper.utils.extractors import extract_json_ld, parse_is_recent
+from onet_scraper.spiders.base import BaseArticleSpider
 
 
-class OnetSpider(CrawlSpider):
+class OnetSpider(BaseArticleSpider):
     """
-    Spider for scraping Onet.pl news articles.
-    Refactored to use Single Responsibility Principle (SRP) utilities.
+    Spider for Onet.pl news articles.
+    Inherits all parsing logic from BaseArticleSpider.
+    Only site-specific selectors and navigation rules are defined here.
     """
 
     name = "onet"
+    source_name = "onet"
     allowed_domains = ["onet.pl"]
     start_urls = ["https://wiadomosci.onet.pl/"]
 
@@ -30,20 +24,21 @@ class OnetSpider(CrawlSpider):
         "DOWNLOAD_DELAY": 2.0,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 1,
         "DEPTH_LIMIT": 5,
-        "CLOSESPIDER_PAGECOUNT": 0,  # 0 = Unlimited items
+        "CLOSESPIDER_PAGECOUNT": 0,
         "ROBOTSTXT_OBEY": False,
         "LOG_LEVEL": "INFO",
     }
 
-    # Compiled Regexes for Performance
-    ID_PATTERN = re.compile(r"/([a-z0-9]+)$")
-
     rules = (
+        # Skip archive/weather/sport index pages (don't crawl, don't parse)
         Rule(
-            LinkExtractor(allow=(r"archiwum", r"20\d\d-", r"pogoda", r"sport"), deny_domains=["przegladsportowy.onet.pl"]),
+            LinkExtractor(
+                allow=(r"archiwum", r"20\d\d-", r"pogoda", r"sport"),
+                deny_domains=["przegladsportowy.onet.pl"],
+            ),
             process_request="skip_request",
         ),
-        # Rule for Articles
+        # Article pages — parse content
         Rule(
             LinkExtractor(
                 allow=(r"wiadomosci\.onet\.pl/[a-z0-9-]+/[a-z0-9-]+/[a-z0-9]+"),
@@ -54,7 +49,7 @@ class OnetSpider(CrawlSpider):
             callback="parse_item",
             follow=False,
         ),
-        # Rule for Categories (Follow to find more articles)
+        # Category pages — follow to find more articles
         Rule(
             LinkExtractor(
                 allow=(r"wiadomosci\.onet\.pl/[a-z0-9-]+$"),
@@ -62,122 +57,40 @@ class OnetSpider(CrawlSpider):
             ),
             follow=True,
         ),
-        # Rule for Pagination (Next Page)
-        Rule(LinkExtractor(allow=(r"wiadomosci.onet.pl"), restrict_xpaths='//a[contains(@class, "next")]'), follow=True),
+        # Pagination
+        Rule(
+            LinkExtractor(allow=(r"wiadomosci.onet.pl"), restrict_xpaths='//a[contains(@class, "next")]'),
+            follow=True,
+        ),
     )
 
-    def skip_request(self, request: Any, response: Response) -> None:
-        return None
+    # -------------------------------------------------------------------------
+    # Onet-specific hooks
+    # -------------------------------------------------------------------------
 
-    def parse_item(self, response: Response) -> Generator[dict[str, Any], None, None]:
-        # 1. External Utils extraction (keep complex logic in utils)
-        metadata = extract_json_ld(response)
+    def get_date_fallback(self, response: Response) -> str | None:
+        """Onet-specific date fallback: check CSS selectors before generic meta tags."""
+        return (
+            response.css(".ods-m-date-authorship__publication::text").get()
+            or response.xpath('//span[contains(@class, "date")]/text()').get()
+            or super().get_date_fallback(response)
+        )
 
-        # 2. Date Freshness Check (Optimization)
-        # We need the date BEFORE full loading to implement the optimization
-        # Use a temporary loader or direct extraction for this decision?
-        # Direct extraction is faster for optimization checks.
-        date_to_check = metadata.get("datePublished")
-        if not date_to_check:
-            # Fallback to visual date for check
-            date_to_check = (
-                response.css(".ods-m-date-authorship__publication::text").get()
-                or response.xpath('//span[contains(@class, "date")]/text()').get()
-            )
-
-        # Filter out old articles
-        if not parse_is_recent(date_to_check, days_limit=3):
-            self.logger.info(f"⚠️ POMINIĘTO (STARE): {date_to_check} | {response.url}")
-            return
-
-        # 3. Initialize Loader
-        loader = ArticleLoader(item={}, response=cast(TextResponse, response))
-
-        # 4. Populate Fields
-
-        # Title
-        loader.add_css("title", "h1::text")
-
-        # URL
-        loader.add_value("url", response.url)
-
-        # Date (Priority: Metadata -> CSS -> XPath)
-        loader.add_value("date", metadata.get("datePublished"))
-        loader.add_css("date", ".ods-m-date-authorship__publication::text")
-        loader.add_xpath("date", '//span[contains(@class, "date")]/text()')
-
-        # Content - Logic: Prefer hyphenate, fallback to p
-        # Check if hyphenate yields any actual text (not just whitespace)
-        hyphenate_texts = response.css(".hyphenate::text").getall()
-        if any(t.strip() for t in hyphenate_texts):
+    def load_content(self, loader: ArticleLoader, response: Response) -> None:
+        """Onet uses .hyphenate class for article body; falls back to <p> tags."""
+        if any(t.strip() for t in response.css(".hyphenate::text").getall()):
             loader.add_css("content", ".hyphenate::text")
         else:
-            # Fallback for pages without hyphenate class
             loader.add_css("content", "p::text")
 
-        # Lead
+    def load_lead(self, loader: ArticleLoader, response: Response) -> None:
         loader.add_css("lead", "#lead::text")
 
-        # Author (Priority: Metadata -> CSS selectors)
-        loader.add_value("author", metadata.get("author"))
+    def load_author_fallbacks(self, loader: ArticleLoader, response: Response, metadata: dict) -> None:
         loader.add_css("author", ".ods-m-author-xl__name-link::text")
         loader.add_css("author", ".ods-m-author-xl__name::text")
         loader.add_css("author", ".authorName::text")
 
-        # Meta Fields
-        # Keywords extraction (Meta -> Regex from JS)
-        keywords = response.xpath('//meta[@name="keywords"]/@content').get()
-        if not keywords:
-            # Fallback: Extract from JS "keywords":["val1", "val2"]
-            try:
-                # Search for "keywords":[...] pattern
-                pattern = r'"keywords":\s*(\[[^\]]+\])'
-                match = re.search(pattern, response.text)
-                if match:
-                    json_array = match.group(1)
-                    keywords_list = json.loads(json_array)
-                    if isinstance(keywords_list, list):
-                        # Filter out internal/tracking keywords if needed, or keep all
-                        # For now, join them with comma to match string format expected by item
-                        keywords = ", ".join([str(k) for k in keywords_list if k])
-            except Exception as e:
-                self.logger.warning(f"Failed to extract keywords via regex for {response.url}: {e}")
-
-        loader.add_value("keywords", keywords)
-        loader.add_value("section", metadata.get("articleSection"))
-        loader.add_value("date_modified", metadata.get("dateModified"))
-
-        # Image
-        loader.add_value("image_url", metadata.get("image_url"))
-        loader.add_xpath("image_url", '//meta[@property="og:image"]/@content')
-
-        # ID
-        loader.add_xpath("id", '//meta[@name="data-story-id"]/@content')
-        # Fallback ID from URL
-        id_match = self.ID_PATTERN.search(response.url)
-        if id_match:
-            loader.add_value("id", id_match.group(1))
-
-        # 5. Load Item
-        item_data = loader.load_item()
-
-        # 6. Post-processing (Read Time & Final Checks)
-        clean_content = item_data.get("content", "")
-        if clean_content:
-            word_count = len(clean_content.split())
-            read_time = max(1, round(word_count / 200))
-            item_data["read_time"] = read_time
-
-        # Instantiate ArticleItem to validate and ensure schema
-        # This will raise ValidationError if required fields (title, url, date) are missing
-        # which is correct behavior (we want to fail if scrap failed)
-        try:
-            item = ArticleItem(**item_data)
-        except Exception as e:
-            self.logger.error(f"Validation Error for {response.url}: {e}")
-            return  # or raise
-
-        article_date_str = item.date
-        self.logger.info(f"✅ ZAPISANO: {article_date_str} | {response.url}")
-
-        yield item.model_dump()
+    def load_date_fallbacks(self, loader: ArticleLoader, response: Response) -> None:
+        loader.add_css("date", ".ods-m-date-authorship__publication::text")
+        loader.add_xpath("date", '//span[contains(@class, "date")]/text()')

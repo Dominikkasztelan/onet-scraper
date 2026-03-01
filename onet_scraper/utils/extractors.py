@@ -86,3 +86,31 @@ def parse_is_recent(date_str: Optional[str], days_limit: int = 3) -> bool:
         return 0 <= days_diff <= days_limit
     except ValueError:
         return False
+
+
+def extract_keywords_from_html(response: Response) -> Optional[str]:
+    """
+    Extracts keywords from standard <meta name="keywords"> or falls back to
+    searching for 'keywords': [...] pattern in the JS/HTML body.
+    """
+    import re
+
+    # Meta Fields -> Keywords extraction (Meta -> Regex from JS)
+    keywords = response.xpath('//meta[@name="keywords"]/@content').get()
+    if not keywords:
+        # Fallback: Extract from JS "keywords":["val1", "val2"]
+        try:
+            # Search for "keywords":[...] pattern
+            pattern = re.compile(r'"keywords":\s*(\[[^\]]+\])')
+            match = pattern.search(response.text)
+            if match:
+                json_array = match.group(1)
+                keywords_list = json.loads(json_array)
+                if isinstance(keywords_list, list):
+                    # Filter out internal/tracking keywords if needed, or keep all
+                    # For now, join them with comma
+                    keywords = ", ".join([str(k) for k in keywords_list if k])
+        except Exception:
+            pass
+
+    return keywords

@@ -1,103 +1,114 @@
-# Onet Scraper
+# Onet Scraper Pro
 
-Profesjonalny scraper danych z portalu Onet.pl, przygotowany do pracy produkcyjnej (24/7). Narzędzie pobiera artykuły, czyści treść z reklam i zapisuje dane w formacie JSONL. Wykorzystuje sieć Tor do anonimizacji i rotacji IP.
+Modularny, produkcyjny scraper artykułów newsowych. Obsługuje Onet.pl i jest zaprojektowany do łatwego rozszerzenia o kolejne serwisy (WP, Interia, TVN24...).
 
 ## Funkcje
 
-*   **Bypass Anti-Bot**: Wykorzystuje sieć Tor oraz `curl_cffi` (TLS Fingerprint Impersonation) do omijania zaawansowanych zabezpieczeń.
-*   **Rotacja IP**: Automatyczna zmiana tożsamości Tor w przypadku wykrycia blokady (403/Redirect).
-*   **Czyste Dane**: Automatyczne usuwanie sekcji "Dołącz do Premium" i reklam.
-*   **Bogate Metadane**: Pobieranie autora, sekcji tematycznej, daty publikacji i modyfikacji (z JSON-LD oraz fallbacków CSS).
-*   **Bezpieczeństwo**: Zarządzanie sekretami przez `.env` i brak hardcodowanych haseł.
+- **Modułowa architektura** — `BaseArticleSpider` z Hook Method Pattern. Nowy serwis = ~20 linii kodu.
+- **Bypass Anti-Bot** — `curl_cffi` (TLS Fingerprint Impersonation) + sieć Tor do anonimizacji i rotacji IP.
+- **Baza danych** — `DatabasePipeline` zapisuje artykuły do SQLite (lokalnie) lub PostgreSQL (produkcja). Deduplikacja przez SHA256(url).
+- **Walidacja danych** — Pydantic `ArticleItem` sprawdza każdy artykuł przed zapisem.
+- **Czyste Dane** — Automatyczne usuwanie reklam i "Dołącz do Premium".
 
 ## Wymagania
 
-*   Python 3.10+
-*   Docker (opcjonalnie, do łatwego uruchomienia z Tor)
+- Python 3.10+
+- Docker (opcjonalnie)
 
 ## Instalacja
 
-### Metoda 1: Docker Compose (Zalecane)
+### Docker Compose (zalecane do produkcji)
 
-Najszybszy sposób na uruchomienie scrapera wraz z wymaganą usługą Tor.
+```bash
+cp .env.example .env       # skonfiguruj .env
+docker-compose up -d --build
+docker-compose logs -f scraper
+```
 
-1.  Sklonuj repozytorium.
-2.  Skopiuj przykładowy plik środowiskowy:
-    ```bash
-    cp .env.example .env
-    ```
-3.  Uruchom usługi:
-    ```bash
-    docker-compose up -d --build
-    ```
-    To uruchomi kontener `tor` oraz `scraper`. Scraper rozpocznie pracę automatycznie.
+Docker uruchamia 3 serwisy: `tor`, `db` (PostgreSQL), `scraper`.
 
-4.  Sprawdź logi:
-    ```bash
-    docker-compose logs -f scraper
-    ```
+### Lokalnie (bez Tora)
 
-Dane będą zapisywane w katalogu `./data`.
+```bash
+python -m venv venv && venv\Scripts\Activate
+pip install -r requirements.txt
+cp .env.example .env       # ustaw TOR_ENABLED=False
+python -m scrapy crawl onet
+```
 
-### Metoda 2: Lokalnie (Python Virtualenv)
+Artykuły trafiają do `data/articles.db` (SQLite).
 
-Wymaga zainstalowanego i działającego Tora na porcie 9050 (SOCKS) i 9051 (Control).
+## Dodanie nowego serwisu
 
-1.  Utwórz wirtualne środowisko:
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # Linux/Mac
-    .\venv\Scripts\Activate   # Windows
-    ```
-2.  Zainstaluj zależności:
-    ```bash
-    pip install -r requirements.txt
-    ```
-3.  Skonfiguruj środowisko:
-    Utwórz plik `.env` (wzorując się na `.env.example`) i upewnij się, że `TOR_PROXY` wskazuje na Twoją instancję Tora.
+Stwórz plik `onet_scraper/spiders/nazwa.py`:
 
-4.  Uruchom scraper:
-    ```bash
-    python -m scrapy crawl onet
-    ```
+```python
+from onet_scraper.spiders.base import BaseArticleSpider
+from scrapy.linkextractors import LinkExtractor
+from scrapy.spiders import Rule
+
+class NowySpider(BaseArticleSpider):
+    name = "nowy"
+    source_name = "nowy"
+    allowed_domains = ["nowy.pl"]
+    start_urls = ["https://nowy.pl/"]
+    rules = (
+        Rule(LinkExtractor(allow=r"nowy\.pl/artykul/.+"), callback="parse_item"),
+    )
+
+    def load_content(self, loader, response):
+        loader.add_css("content", ".article-body p::text")
+```
+
+Uruchom: `python -m scrapy crawl nowy`
+
+## Konfiguracja
+
+| Zmienna | Opis | Domyślna |
+|---|---|---|
+| `TOR_ENABLED` | `True` = through Tor, `False` = bezpośrednio | `False` |
+| `TOR_PASSWORD` | Hasło do Tor Control Port | `` |
+| `DATABASE_URL` | SQLite lub PostgreSQL URL | `sqlite:///data/articles.db` |
+| `DB_PASSWORD` | Hasło PostgreSQL (Docker) | `scraper_dev` |
+
+## Struktura projektu
+
+```
+onet_scraper/
+├── spiders/
+│   ├── base.py         # BaseArticleSpider — logika wspólna dla wszystkich serwisów
+│   ├── onet.py         # OnetSpider — selektory specyficzne dla Onet.pl
+│   └── wp.py           # WpSpider — proof of concept dla WP.pl
+├── db/
+│   └── schema.py       # Schemat SQLAlchemy (SQLite/PostgreSQL)
+├── pipelines.py        # PydanticValidationPipeline + DatabasePipeline
+├── middlewares.py      # TorMiddleware — rotacja IP
+├── loaders.py          # ArticleLoader — procesory pól
+├── items.py            # ArticleItem — model Pydantic
+└── settings.py         # Konfiguracja Scrapy
+tests/                  # 59 testów pytest
+scripts/                # Pomocnicze skrypty analizy danych
+```
 
 ## Development
 
-### Formatowanie kodu
-Projekt wykorzystuje `ruff` do dbania o jakość kodu. Przed commitem uruchom:
 ```bash
-ruff format .
-ruff check . --fix
-```
-
-### Testy
-Uruchom testy jednostkowe:
-```bash
+# Testy
 python -m pytest
-```bash
-python -m pytest
+
+# Linting
+ruff check . --fix && ruff format .
+
+# Testowy run (5 artykułów)
+python -m scrapy crawl onet -s CLOSESPIDER_ITEMCOUNT=5
+
+# Sprawdzenie bazy
+python -c "import sqlite3; c=sqlite3.connect('data/articles.db'); print(c.execute('SELECT COUNT(*) FROM articles').fetchone())"
 ```
 
-### Kontrola Jakości (Type Checking & Linting)
-Uruchom statyczną analizę typów (Mypy):
-```bash
-python -m mypy .
+## Architektura produkcyjna (Etap 2 → 3)
+
 ```
-Jeśli zobaczysz błędy, sprawdź konfigurację w `pyproject.toml` lub dodaj `# type: ignore` w uzasadnionych przypadkach.
-
-### CI/CD (GitHub Actions)
-Projekt posiada skonfigurowane akcje GitHub w folderze `.github/workflows`:
-- **Python Quality Check**: Uruchamia się przy każdym pushu/PR. Sprawdza:
-    - Formatowanie (`ruff format --check`)
-    - Linter (`ruff check`)
-    - Typowanie (`mypy`)
-    - Testy (`pytest`)
-Wyniki są widoczne w zakładce "Actions" na GitHubie. Zielony "ptaszek" oznacza, że kod jest bezpieczny do wdrożenia.
-
-## Struktura Plików
-*   `onet_scraper/`: Kod źródłowy Scrapy.
-    *   `spiders/`: Logika pająka.
-    *   `middlewares.py`: Rotacja IP i obsługa Tora.
-*   `tests/`: Testy `pytest`.
-*   `docker-compose.yml`: Definicja usług Docker.
-*   `.env`: Konfiguracja (nie commitować!).
+Etap 2 (obecnie):   BaseArticleSpider + SQLite/PostgreSQL
+Etap 3 (przyszłość): + Redis queue + Celery workers + Airflow scheduler
+```
