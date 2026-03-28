@@ -1,3 +1,4 @@
+import logging
 import re
 from collections.abc import Generator
 from typing import Any, cast
@@ -8,6 +9,9 @@ from scrapy.spiders import CrawlSpider
 from onet_scraper.items import ArticleItem
 from onet_scraper.loaders import ArticleLoader
 from onet_scraper.utils.extractors import extract_json_ld, extract_keywords_from_html, parse_is_recent
+
+logger = logging.getLogger(__name__)
+
 
 
 class BaseArticleSpider(CrawlSpider):
@@ -85,7 +89,8 @@ class BaseArticleSpider(CrawlSpider):
         try:
             ArticleItem(**item_data)
             self.logger.info(f"✅ WYSŁANO DO PIPELINE: {item_data.get('date', '?')} | {response.url}")
-        except Exception:
+        except Exception as e:
+            logger.exception(f"Wyłapano nieoczekiwany wyjątek: {e}")
             self.logger.warning(f"Wysłano wadliwe dane do Pipeline: {response.url}")
 
         yield item_data

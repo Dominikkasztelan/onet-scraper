@@ -86,7 +86,7 @@ class TorMiddleware:
         final_msg = (
             f"\n\n{'!' * 60}\nCRITICAL ERROR: {error_msg}\nPlease start Tor manually before running the scraper.\n{'!' * 60}\n"
         )
-        print(final_msg)
+        logger.info(final_msg)
         logger.critical(final_msg)
         raise CloseSpider(final_msg)
 
@@ -115,7 +115,7 @@ class TorMiddleware:
             if self._is_port_open(host, port):
                 return True
             time.sleep(1)
-            print(f"Waiting for Tor to start... ({int(time.time() - start_time)}s)")
+            logger.info(f"Waiting for Tor to start... ({int(time.time() - start_time)}s)")
         return False
 
     def _try_start_tor(self):
@@ -209,6 +209,7 @@ class TorMiddleware:
                     dict(response.headers),
                 )
         except Exception as e:
+            logger.exception(f"Wyłapano nieoczekiwany wyjątek: {e}")
             # Re-raise to be caught by the caller
             raise e
 

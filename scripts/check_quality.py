@@ -1,6 +1,10 @@
 import json
+import logging
 from collections import Counter
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
 
 
 def analyze_file(filepath: Path | str) -> None:
@@ -45,7 +49,7 @@ def analyze_file(filepath: Path | str) -> None:
                     empty_keywords += 1
 
             except json.JSONDecodeError as e:
-                print(f"Błąd JSON w linii {total + 1}: {e}")
+                logger.info(f"Błąd JSON w linii {total + 1}: {e}")
 
     # Calculate percentages
     keywords_pct = (with_keywords / total * 100) if total > 0 else 0
@@ -53,29 +57,29 @@ def analyze_file(filepath: Path | str) -> None:
     title_pct = (with_title / total * 100) if total > 0 else 0
 
     # Print report
-    print("=" * 60)
-    print("RAPORT JAKOŚCI DANYCH")
-    print("=" * 60)
-    print(f"\nPlik: {filepath}")
-    print(f"\nCałkowita liczba rekordów: {total}")
-    print("\n" + "-" * 60)
-    print("KOMPLETNOŚĆ PÓL:")
-    print("-" * 60)
-    print(f"Tytuł:       {with_title:4d} / {total} ({title_pct:5.1f}%)")
-    print(f"Treść:       {with_content:4d} / {total} ({content_pct:5.1f}%)")
-    print(f"Tagi:        {with_keywords:4d} / {total} ({keywords_pct:5.1f}%)")
-    print(f"Brak tagów:  {empty_keywords:4d} / {total}")
+    logger.info("=" * 60)
+    logger.info("RAPORT JAKOŚCI DANYCH")
+    logger.info("=" * 60)
+    logger.info(f"\nPlik: {filepath}")
+    logger.info(f"\nCałkowita liczba rekordów: {total}")
+    logger.info("\n" + "-" * 60)
+    logger.info("KOMPLETNOŚĆ PÓL:")
+    logger.info("-" * 60)
+    logger.info(f"Tytuł:       {with_title:4d} / {total} ({title_pct:5.1f}%)")
+    logger.info(f"Treść:       {with_content:4d} / {total} ({content_pct:5.1f}%)")
+    logger.info(f"Tagi:        {with_keywords:4d} / {total} ({keywords_pct:5.1f}%)")
+    logger.info(f"Brak tagów:  {empty_keywords:4d} / {total}")
 
-    print("\n" + "-" * 60)
-    print("NAJCZĘSTSZE TAGI (top 15):")
-    print("-" * 60)
+    logger.info("\n" + "-" * 60)
+    logger.info("NAJCZĘSTSZE TAGI (top 15):")
+    logger.info("-" * 60)
     for tag, count in keyword_counter.most_common(15):
         pct = count / total * 100
-        print(f"{tag:30s} {count:4d} ({pct:5.1f}%)")
+        logger.info(f"{tag:30s} {count:4d} ({pct:5.1f}%)")
 
-    print("\n" + "=" * 60)
-    print(f"Łącznie unikalnych tagów: {len(keyword_counter)}")
-    print("=" * 60)
+    logger.info("\n" + "=" * 60)
+    logger.info(f"Łącznie unikalnych tagów: {len(keyword_counter)}")
+    logger.info("=" * 60)
 
 
 if __name__ == "__main__":

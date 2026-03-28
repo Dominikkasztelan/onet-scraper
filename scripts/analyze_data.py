@@ -1,6 +1,10 @@
 import json
+import logging
 import sys
 from collections import Counter
+
+logger = logging.getLogger(__name__)
+
 
 
 def analyze_jsonl(filepath):
@@ -11,7 +15,7 @@ def analyze_jsonl(filepath):
     with_title = 0
     keyword_counts: Counter[str] = Counter()
 
-    print(f"Analyzing {filepath}...")
+    logger.info(f"Analyzing {filepath}...")
 
     try:
         with open(filepath, "r", encoding="utf-8") as f:
@@ -40,23 +44,23 @@ def analyze_jsonl(filepath):
                             keyword_counts.update(tags)
 
                 except json.JSONDecodeError:
-                    print(f"Invalid JSON at line {total}")
+                    logger.info(f"Invalid JSON at line {total}")
 
     except FileNotFoundError:
-        print(f"File not found: {filepath}")
+        logger.info(f"File not found: {filepath}")
         return
 
-    print("-" * 30)
-    print(f"Total Lines: {total}")
-    print(f"Valid JSON Objects: {valid_json}")
-    print("-" * 30)
-    print(f"Title Present: {with_title} ({with_title / total * 100:.1f}%)")
-    print(f"Content Present (>100 chars): {with_content} ({with_content / total * 100:.1f}%)")
-    print(f"Keywords Present: {with_keywords} ({with_keywords / total * 100:.1f}%)")
-    print("-" * 30)
-    print("Most common keywords:")
+    logger.info("-" * 30)
+    logger.info(f"Total Lines: {total}")
+    logger.info(f"Valid JSON Objects: {valid_json}")
+    logger.info("-" * 30)
+    logger.info(f"Title Present: {with_title} ({with_title / total * 100:.1f}%)")
+    logger.info(f"Content Present (>100 chars): {with_content} ({with_content / total * 100:.1f}%)")
+    logger.info(f"Keywords Present: {with_keywords} ({with_keywords / total * 100:.1f}%)")
+    logger.info("-" * 30)
+    logger.info("Most common keywords:")
     for tag, count in keyword_counts.most_common(10):
-        print(f"  {tag}: {count}")
+        logger.info(f"  {tag}: {count}")
 
 
 if __name__ == "__main__":
@@ -65,4 +69,4 @@ if __name__ == "__main__":
     else:
         # Default to the one the user likely means if no arg provided,
         # but better to pass it explicitly from the tool call.
-        print("Please provide a filename.")
+        logger.info("Please provide a filename.")

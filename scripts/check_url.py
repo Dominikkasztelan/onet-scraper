@@ -1,5 +1,9 @@
+import logging
 import urllib.error
 import urllib.request
+
+logger = logging.getLogger(__name__)
+
 
 url = "https://wiadomosci.onet.pl/swiat/nie-tylko-grenlandia-i-wenezuela-majstersztyk-donalda-trumpa-w-przyczolku-putina/htj1fsq"
 
@@ -13,11 +17,12 @@ req = urllib.request.Request(
 
 try:
     with urllib.request.urlopen(req) as response:
-        print(f"Status: {response.status}")
-        print(f"Final URL: {response.geturl()}")
-        print(f"Headers: {response.info()}")
+        logger.info(f"Status: {response.status}")
+        logger.info(f"Final URL: {response.geturl()}")
+        logger.info(f"Headers: {response.info()}")
 except urllib.error.HTTPError as e:
-    print(f"HTTP Error: {e.code} {e.reason}")
-    print(f"Headers: {e.headers}")
+    logger.info(f"HTTP Error: {e.code} {e.reason}")
+    logger.info(f"Headers: {e.headers}")
 except Exception as e:
-    print(f"Error: {e}")
+    logger.exception(f"Wyłapano nieoczekiwany wyjątek: {e}")
+    logger.info(f"Error: {e}")

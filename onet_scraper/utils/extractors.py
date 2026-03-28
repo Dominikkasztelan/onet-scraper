@@ -1,8 +1,12 @@
 import json
+import logging
 from datetime import datetime
 from typing import Any, Dict, Optional
 
 from scrapy.http import Response
+
+logger = logging.getLogger(__name__)
+
 
 
 def extract_json_ld(response: Response) -> Dict[str, Optional[str]]:
@@ -110,7 +114,8 @@ def extract_keywords_from_html(response: Response) -> Optional[str]:
                     # Filter out internal/tracking keywords if needed, or keep all
                     # For now, join them with comma
                     keywords = ", ".join([str(k) for k in keywords_list if k])
-        except Exception:
+        except Exception as e:
+            logger.exception(f"Wyłapano nieoczekiwany wyjątek: {e}")
             pass
 
     return keywords

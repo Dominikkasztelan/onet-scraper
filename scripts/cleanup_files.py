@@ -1,6 +1,10 @@
+import logging
 import os
 import shutil
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
 
 
 def cleanup_files():
@@ -13,7 +17,7 @@ def cleanup_files():
     # Create directories
     for directory in [DATA_DIR, LOGS_DIR, DEBUG_DIR]:
         directory.mkdir(parents=True, exist_ok=True)
-        print(f"Ensured directory exists: {directory}")
+        logger.info(f"Ensured directory exists: {directory}")
 
     # Move files
     for file in ROOT_DIR.iterdir():
@@ -24,21 +28,21 @@ def cleanup_files():
         if file.suffix == ".jsonl" and file.name.startswith("data_"):
             destination = DATA_DIR / file.name
             shutil.move(str(file), str(destination))
-            print(f"Moved {file.name} to data/")
+            logger.info(f"Moved {file.name} to data/")
 
         # Move .log files to logs/
         elif file.suffix == ".log":
             destination = LOGS_DIR / file.name
             shutil.move(str(file), str(destination))
-            print(f"Moved {file.name} to logs/")
+            logger.info(f"Moved {file.name} to logs/")
 
         # Move .txt files to logs/debug/ (excluding requirements.txt)
         elif file.suffix == ".txt" and file.name != "requirements.txt":
             destination = DEBUG_DIR / file.name
             shutil.move(str(file), str(destination))
-            print(f"Moved {file.name} to logs/debug/")
+            logger.info(f"Moved {file.name} to logs/debug/")
 
-    print("Cleanup complete!")
+    logger.info("Cleanup complete!")
 
 
 if __name__ == "__main__":

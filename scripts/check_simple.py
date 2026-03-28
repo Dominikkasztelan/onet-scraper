@@ -1,5 +1,9 @@
 import json
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
 
 
 def check_optional_fields(filepath):
@@ -22,16 +26,16 @@ def check_optional_fields(filepath):
         "section": "Sekcja",
     }
 
-    print("ANALIZA POL OPCJONALNYCH")
-    print("=" * 60)
-    print(f"Lacznie rekordow: {total}")
-    print("")
+    logger.info("ANALIZA POL OPCJONALNYCH")
+    logger.info("=" * 60)
+    logger.info(f"Lacznie rekordow: {total}")
+    logger.info("")
 
     for field, label in fields.items():
         filled = sum(1 for x in data if x.get(field) is not None and x.get(field) != "")
         pct = (filled / total * 100) if total > 0 else 0
         empty = total - filled
-        print(f"{label:20s} {filled:4d}/{total:4d} ({pct:5.1f}%) - brak: {empty}")
+        logger.info(f"{label:20s} {filled:4d}/{total:4d} ({pct:5.1f}%) - brak: {empty}")
 
 
 if __name__ == "__main__":
